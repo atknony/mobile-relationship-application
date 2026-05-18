@@ -10,8 +10,7 @@ A minimalist couples app: one tap sends a "ping" (push notification + vibration)
 # Start dev server
 npx expo start
 
-# Copy .env.example → .env and fill in your Supabase credentials first
-cp .env.example .env
+# .env is already filled in with Supabase credentials
 ```
 
 ## Tech stack
@@ -49,14 +48,14 @@ src/
     queryClient.ts          # TanStack Query client
   stores/                   # Zustand stores
     authStore.ts            # session, user, sessionLoaded
-    profileStore.ts         # ownProfile, partnerProfile, pairedWith
+    profileStore.ts         # ownProfile, partnerProfile, pairedWith, pairId
     pingStore.ts            # pingStatus, offlineQueue, incomingPing
-    unpairStore.ts          # mutual-consent unpair state machine
+    unpairStore.ts          # (reserved — not active, see unpair notes below)
   hooks/
     useSupabaseSession.ts   # onAuthStateChange → authStore (call once from root)
-    useProfile.ts           # TanStack Query: own profile
-    usePartnerProfile.ts    # TanStack Query: partner profile
-    usePingRealtime.ts      # Supabase Realtime subscription (pings + unpair_requests)
+    useProfile.ts           # TanStack Query: own profile + fetches pair UUID
+    usePartnerProfile.ts    # TanStack Query: partner profile (by partner_id)
+    usePingRealtime.ts      # Supabase Realtime subscription on moments table
     useSendPing.ts          # send ping, handles online/offline
     useOfflineQueue.ts      # AsyncStorage queue persistence + drain on reconnect
     useNetworkStatus.ts     # NetInfo listener, calls onReconnect callback
@@ -64,12 +63,12 @@ src/
     useHaptics.ts           # Haptic pattern wrappers
     useIncomingPing.ts      # Overlay trigger + local notification when backgrounded
     useInviteCode.ts        # generate-invite-code + redeem-invite-code Edge Functions
-    useUnpairFlow.ts        # initiate / confirm / decline unpair via Edge Functions
+    useUnpairFlow.ts        # dissolve-pair Edge Function (simplified single-step)
   components/
     ui/                     # Button, TextInput, Avatar, LoadingSpinner, Toast
     ping/                   # PingButton, PingRipple, PingParticles, IncomingPingOverlay
     pair/                   # InviteCodeDisplay, InviteCodeInput
-    unpair/                 # UnpairInitiator, UnpairPendingBanner
+    unpair/                 # UnpairInitiator, UnpairPendingBanner (banner is stub)
   types/
     database.ts             # Supabase table types (hand-stub — replace with generated)
     ping.ts                 # QueuedPing, IncomingPing, PingStatus
@@ -77,6 +76,13 @@ src/
     colors.ts               # Design tokens (mirror of tailwind.config.js)
     timing.ts               # Animation constants (CHARGE_DURATION_MS, spring configs)
     hapticPatterns.ts       # Haptic style mappings
+
+supabase/
+  functions/
+    generate-invite-code/   # Creates pending pair + 6-char invite code
+    redeem-invite-code/     # Activates pair, sets partner_id on both profiles
+    send-ping/              # Inserts into moments table
+    dissolve-pair/          # Sets pair status=dissolved, clears partner_id
 ```
 
 ## Design system
@@ -105,6 +111,68 @@ profile && !pairedWith→ /(pair)/create-invite
 profile && pairedWith → <Slot /> → (home)/index
 ```
 
+`pairedWith` is set from `profile.partner_id` (the partner's user_id). It is non-null only when the user has an active pair.
+
+## Supabase schema
+
+### Tables
+
+**`profiles`**
+| Column | Type | Notes |
+|---|---|---|
+| id | uuid | = auth.uid (PK) |
+| username | text | displayed to partner |
+| avatar_url | text | nullable |
+| partner_id | uuid | nullable — partner's user_id |
+| push_token | text | nullable — Expo push token |
+| created_at | timestamptz | |
+
+**`pairs`**
+| Column | Type | Notes |
+|---|---|---|
+| id | uuid | PK |
+| requester_id | uuid | user who generated invite |
+| receiver_id | uuid | nullable — filled on redeem |
+| invite_code | text | nullable unique — cleared on activation |
+| status | text | 'pending' / 'active' / 'dissolved' |
+| created_at | timestamptz | |
+
+**`moments`** (the ping events)
+| Column | Type | Notes |
+|---|---|---|
+| id | uuid | PK |
+| pair_id | uuid | FK → pairs |
+| sender_id | uuid | FK → auth.users |
+| photo_url | text | nullable — Supabase Storage URL |
+| viewed_at | timestamptz | nullable |
+| created_at | timestamptz | |
+
+### Storage bucket
+- `moments` — public bucket for ping photo uploads
+
+### Edge Functions (deployed)
+| Function | What it does |
+|---|---|
+| `generate-invite-code` | Deletes old pending pair, creates new one, returns 6-char code |
+| `redeem-invite-code` | Finds pair by code, sets receiver_id + status=active, sets partner_id on both profiles |
+| `send-ping` | Finds caller's active pair, inserts into moments table |
+| `dissolve-pair` | Sets pair status=dissolved, clears partner_id on both profiles |
+
+All Edge Functions use `service_role` key and bypass RLS.
+
+### RLS policies
+RLS is enabled on all tables. Policies:
+- `profiles`: own user can read/write own row; can read partner's row (via partner_id lookup)
+- `pairs`: members (requester_id or receiver_id) can read their own pair
+- `moments`: members of the active pair can read moments for that pair
+- Writes to `moments` and `pairs` go through Edge Functions only
+
+## profileStore fields
+- `ownProfile` — own Profile row
+- `partnerProfile` — partner's Profile row
+- `pairedWith` — partner's user_id (= `ownProfile.partner_id`), used by auth guard
+- `pairId` — UUID from the pairs table, fetched by `useProfile` after load, used by Realtime channel
+
 ## Hold-to-ping animation
 
 `usePingAnimation` uses `Gesture.Pan()` (gesture-handler v2) on the UI thread:
@@ -116,29 +184,30 @@ profile && pairedWith → <Slot /> → (home)/index
 
 ## Supabase integration points
 
-The Supabase backend is being built separately. These are the frontend ↔ backend contracts:
-
 | Frontend call | Backend surface |
 |---|---|
 | `supabase.auth.signInWithOtp({ phone })` | Supabase Auth (phone OTP) |
 | `supabase.auth.verifyOtp({ phone, token, type: 'sms' })` | Supabase Auth |
 | `supabase.from('profiles').select/upsert` | `profiles` table |
-| `supabase.from('profiles').select` (partner) | `profiles` table |
-| `supabase.channel(...).on('postgres_changes', { table: 'pings' })` | Realtime on `pings` table |
-| `supabase.channel(...).on('postgres_changes', { table: 'unpair_requests' })` | Realtime on `unpair_requests` table |
-| `supabase.functions.invoke('send-ping', { body })` | Edge Function |
+| `supabase.from('profiles').select` (partner) | `profiles` table (by id = partner_id) |
+| `supabase.channel(...).on('postgres_changes', { table: 'moments' })` | Realtime on `moments` table |
 | `supabase.functions.invoke('generate-invite-code')` | Edge Function |
 | `supabase.functions.invoke('redeem-invite-code', { body: { code } })` | Edge Function |
-| `supabase.functions.invoke('initiate-unpair')` | Edge Function |
-| `supabase.functions.invoke('confirm-unpair', { body: { requestId } })` | Edge Function |
-| `supabase.functions.invoke('decline-unpair', { body: { requestId } })` | Edge Function |
+| `supabase.functions.invoke('send-ping', { body })` | Edge Function |
+| `supabase.functions.invoke('dissolve-pair')` | Edge Function |
 | `supabase.storage.from('moments').upload(...)` | Storage bucket `moments` |
 | `supabase.storage.from('moments').getPublicUrl(...)` | Storage bucket `moments` |
 
-When the backend is ready, replace `src/types/database.ts` with Supabase-generated types:
+To regenerate types from the live schema:
 ```bash
-npx supabase gen types typescript --project-id <id> > src/types/database.ts
+npx supabase gen types typescript --project-id tzhkrhxnfjephtrxbmvp > src/types/database.ts
 ```
+
+## Unpair flow
+
+Currently simplified: one-tap dissolve via `dissolve-pair` Edge Function. No mutual consent.
+`UnpairPendingBanner` is a stub (returns null). To add mutual consent later, create an
+`unpair_requests` table and restore the `initiate/confirm/decline` pattern in `useUnpairFlow`.
 
 ## Critical gotchas
 
@@ -151,3 +220,4 @@ npx supabase gen types typescript --project-id <id> > src/types/database.ts
 - **Offline ping queue photos**: photo URIs from `expo-image-picker` point to OS temp dirs that may be cleared. `useSendPing` copies photos to `FileSystem.documentDirectory + 'ping-moments/'` before queuing.
 - **`expo-splash-screen`**: `SplashScreen.preventAutoHideAsync()` is called at module level in `app/_layout.tsx`. It's hidden only after both `sessionLoaded` and `fontsLoaded` are true.
 - **Env vars**: use `EXPO_PUBLIC_` prefix — Expo only exposes env vars with this prefix to the client bundle.
+- **`pairId` vs `partner_id`**: `profileStore.pairedWith` is the partner's user_id; `profileStore.pairId` is the pairs table UUID. Realtime uses `pairId`; auth guard uses `pairedWith`.
