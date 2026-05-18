@@ -6,37 +6,24 @@ import { useToast } from '@/components/ui/Toast';
 
 export function UnpairInitiator() {
   const [showConfirm, setShowConfirm] = useState(false);
-  const { initiateUnpair, status } = useUnpairFlow();
+  const { dissolve } = useUnpairFlow();
   const { showToast } = useToast();
 
-  const isPending = status === 'pending_partner';
-
-  const handleInitiate = async () => {
+  const handleDissolve = async () => {
     try {
-      await initiateUnpair.mutateAsync();
+      await dissolve.mutateAsync();
       setShowConfirm(false);
-      showToast('Unpair request sent. Waiting for your partner.', 'info');
     } catch {
       showToast('Something went wrong. Try again.', 'error');
     }
   };
-
-  if (isPending) {
-    return (
-      <View className="bg-white/60 rounded-2xl p-4">
-        <Text className="font-nunito-semibold text-imm-muted text-sm text-center">
-          Waiting for your partner to confirm the unpair request...
-        </Text>
-      </View>
-    );
-  }
 
   return (
     <>
       <Button
         onPress={() => setShowConfirm(true)}
         variant="ghost"
-        loading={initiateUnpair.isPending}
+        loading={dissolve.isPending}
       >
         End this relationship
       </Button>
@@ -52,10 +39,10 @@ export function UnpairInitiator() {
                 End relationship?
               </Text>
               <Text className="font-nunito text-imm-muted text-sm text-center">
-                Your partner will need to confirm. If they don't respond within 24 hours, the request will expire.
+                This will disconnect you from your partner immediately.
               </Text>
-              <Button onPress={handleInitiate} variant="danger" loading={initiateUnpair.isPending}>
-                Send request
+              <Button onPress={handleDissolve} variant="danger" loading={dissolve.isPending}>
+                Disconnect
               </Button>
               <Button onPress={() => setShowConfirm(false)} variant="ghost">
                 Cancel

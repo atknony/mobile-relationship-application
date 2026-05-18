@@ -1,30 +1,27 @@
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { useAuthStore } from '@/stores/authStore';
 import { useProfileStore } from '@/stores/profileStore';
 import type { Profile } from '@/types/database';
 
 export function usePartnerProfile() {
-  const ownUserId = useAuthStore((s) => s.user?.id);
-  const pairId = useProfileStore((s) => s.ownProfile?.pair_id);
+  // partner_id is the partner's user_id — query their profile directly
+  const partnerId = useProfileStore((s) => s.ownProfile?.partner_id);
   const setPartnerProfile = useProfileStore((s) => s.setPartnerProfile);
 
   const query = useQuery({
-    queryKey: ['partner-profile', pairId],
+    queryKey: ['partner-profile', partnerId],
     queryFn: async (): Promise<Profile | null> => {
-      if (!pairId || !ownUserId) return null;
-      // Fetch the other user in the pair
+      if (!partnerId) return null;
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('pair_id', pairId)
-        .neq('id', ownUserId)
+        .eq('id', partnerId)
         .single();
       if (error) throw error;
       return data as Profile;
     },
-    enabled: Boolean(pairId && ownUserId),
+    enabled: Boolean(partnerId),
     staleTime: 5 * 60 * 1000,
   });
 

@@ -4,35 +4,28 @@
 export type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
 
 export interface Profile {
-  id: string;               // = auth.uid
-  display_name: string;
-  full_name: string;
+  id: string;                 // = auth.uid
+  username: string;
   avatar_url: string | null;
-  pair_id: string | null;   // FK → pairs table
+  partner_id: string | null;  // partner's user_id (auth.uid of the other person)
+  push_token: string | null;
   created_at: string;
 }
 
-export interface Ping {
+export interface Moment {
   id: string;
-  pair_id: string;
+  pair_id: string;            // FK → pairs table
   sender_id: string;
-  moment_url: string | null; // Supabase Storage URL
+  photo_url: string | null;   // Supabase Storage URL
+  viewed_at: string | null;
   created_at: string;
-}
-
-export interface UnpairRequest {
-  id: string;
-  pair_id: string;
-  initiated_by: string;
-  status: 'pending' | 'confirmed' | 'declined' | 'expired';
-  created_at: string;
-  expires_at: string;
 }
 
 export interface Pair {
   id: string;
-  user_a: string;
-  user_b: string;
+  requester_id: string;       // user who created the invite
+  receiver_id: string;        // user who redeemed the invite
+  status: string;             // 'pending' | 'active' | 'dissolved'
   created_at: string;
 }
 
@@ -43,23 +36,18 @@ export interface Database {
         Row: Profile;
         Insert: {
           id: string;
-          display_name: string;
-          full_name: string;
+          username: string;
           avatar_url?: string | null;
-          pair_id?: string | null;
+          partner_id?: string | null;
+          push_token?: string | null;
           created_at?: string;
         };
         Update: Partial<Profile>;
       };
-      pings: {
-        Row: Ping;
-        Insert: Omit<Ping, 'id' | 'created_at'> & { id?: string; created_at?: string };
-        Update: Partial<Ping>;
-      };
-      unpair_requests: {
-        Row: UnpairRequest;
-        Insert: Omit<UnpairRequest, 'id' | 'created_at'> & { id?: string; created_at?: string };
-        Update: Partial<UnpairRequest>;
+      moments: {
+        Row: Moment;
+        Insert: Omit<Moment, 'id' | 'created_at'> & { id?: string; created_at?: string };
+        Update: Partial<Moment>;
       };
       pairs: {
         Row: Pair;

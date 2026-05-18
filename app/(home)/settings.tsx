@@ -44,15 +44,12 @@ export default function SettingsScreen() {
         <View className="flex-row items-center gap-3">
           <Avatar
             uri={ownProfile?.avatar_url}
-            name={ownProfile?.display_name}
+            name={ownProfile?.username}
             size={48}
           />
           <View>
             <Text className="font-nunito-bold text-imm-text">
-              {ownProfile?.display_name}
-            </Text>
-            <Text className="font-nunito text-imm-muted text-sm">
-              {ownProfile?.full_name}
+              {ownProfile?.username}
             </Text>
           </View>
         </View>
@@ -67,15 +64,12 @@ export default function SettingsScreen() {
           <View className="flex-row items-center gap-3">
             <Avatar
               uri={partnerProfile.avatar_url}
-              name={partnerProfile.display_name}
+              name={partnerProfile.username}
               size={48}
             />
             <View>
               <Text className="font-nunito-bold text-imm-text">
-                {partnerProfile.display_name}
-              </Text>
-              <Text className="font-nunito text-imm-muted text-sm">
-                {partnerProfile.full_name}
+                {partnerProfile.username}
               </Text>
             </View>
           </View>

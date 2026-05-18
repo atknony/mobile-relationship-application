@@ -2,49 +2,29 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { useProfileStore } from '@/stores/profileStore';
-import { useUnpairStore } from '@/stores/unpairStore';
 
+// Simplified unpair: directly dissolves the pair via the dissolve-pair Edge Function.
+// (A mutual-consent flow can be added later with an unpair_requests table.)
 export function useUnpairFlow() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const setPairedWith = useProfileStore((s) => s.setPairedWith);
   const setPartnerProfile = useProfileStore((s) => s.setPartnerProfile);
-  const resetUnpair = useUnpairStore((s) => s.resetUnpair);
-  const status = useUnpairStore((s) => s.status);
-  const activeRequest = useUnpairStore((s) => s.activeRequest);
+  const setPairId = useProfileStore((s) => s.setPairId);
 
-  const initiateUnpair = useMutation({
+  const dissolve = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.functions.invoke('initiate-unpair');
-      if (error) throw error;
-    },
-  });
-
-  const confirmUnpair = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.functions.invoke('confirm-unpair', {
-        body: { requestId: activeRequest?.id },
-      });
+      const { error } = await supabase.functions.invoke('dissolve-pair');
       if (error) throw error;
     },
     onSuccess: () => {
       setPairedWith(null);
       setPartnerProfile(null);
-      resetUnpair();
+      setPairId(null);
       void queryClient.invalidateQueries({ queryKey: ['profile'] });
       router.replace('/(pair)/create-invite');
     },
   });
 
-  const declineUnpair = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.functions.invoke('decline-unpair', {
-        body: { requestId: activeRequest?.id },
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => resetUnpair(),
-  });
-
-  return { initiateUnpair, confirmUnpair, declineUnpair, status, activeRequest };
+  return { dissolve };
 }

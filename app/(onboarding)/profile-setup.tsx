@@ -10,8 +10,7 @@ import { useToast } from '@/components/ui/Toast';
 import type { Profile } from '@/types/database';
 
 export default function ProfileSetupScreen() {
-  const [displayName, setDisplayName] = useState('');
-  const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const userId = useAuthStore((s) => s.user?.id);
   const setOwnProfile = useProfileStore((s) => s.setOwnProfile);
@@ -19,7 +18,7 @@ export default function ProfileSetupScreen() {
   const { showToast } = useToast();
 
   const handleSave = async () => {
-    const name = displayName.trim();
+    const name = username.trim();
     if (!name || !userId) {
       showToast('Enter a name to continue', 'error');
       return;
@@ -31,8 +30,7 @@ export default function ProfileSetupScreen() {
       .from('profiles')
       .upsert({
         id: userId,
-        display_name: name,
-        full_name: fullName.trim() || name,
+        username: name,
       })
       .select()
       .single();
@@ -67,19 +65,12 @@ export default function ProfileSetupScreen() {
 
         <View className="gap-4">
           <TextInput
-            label="Display name"
-            value={displayName}
-            onChangeText={setDisplayName}
+            label="Username"
+            value={username}
+            onChangeText={setUsername}
             placeholder="e.g. Ata"
             maxLength={32}
             autoFocus
-          />
-          <TextInput
-            label="Full name (optional)"
-            value={fullName}
-            onChangeText={setFullName}
-            placeholder="e.g. Ata Onay"
-            maxLength={64}
           />
           <Button onPress={handleSave} loading={loading}>
             Continue

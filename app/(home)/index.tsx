@@ -52,7 +52,7 @@ export default function HomeScreen() {
     setMomentUri(undefined);
   }, [sendPing, momentUri]);
 
-  const partnerName = partnerProfile?.display_name ?? '...';
+  const partnerName = partnerProfile?.username ?? '...';
 
   return (
     <View
@@ -64,7 +64,7 @@ export default function HomeScreen() {
         <View className="flex-row items-center gap-3">
           <Avatar
             uri={partnerProfile?.avatar_url}
-            name={partnerProfile?.display_name}
+            name={partnerProfile?.username}
             size={40}
           />
           <View>
