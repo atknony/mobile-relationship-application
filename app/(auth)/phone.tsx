@@ -3,6 +3,7 @@ import { View, Text, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { DEMO_PHONE, enterDemoMode } from '@/lib/demoMode';
 import { Button } from '@/components/ui/Button';
 import { TextInput } from '@/components/ui/TextInput';
 import { useToast } from '@/components/ui/Toast';
@@ -16,6 +17,14 @@ export default function PhoneScreen() {
 
   const handleSendOtp = async () => {
     const cleaned = phone.trim().replace(/\s/g, '');
+
+    // Dev-only bypass — skips the SMS provider and lands on the ping screen.
+    if (__DEV__ && cleaned === DEMO_PHONE) {
+      enterDemoMode();
+      showToast('Demo mode — signed in with sample data', 'info');
+      return;
+    }
+
     if (!cleaned.startsWith('+') || cleaned.length < 8) {
       showToast('Enter your phone number with country code (e.g. +1...)', 'error');
       return;

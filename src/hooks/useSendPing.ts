@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import * as FileSystem from 'expo-file-system/legacy';
 import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/stores/authStore';
 import { usePingStore } from '@/stores/pingStore';
 import { useOfflineQueue } from '@/hooks/useOfflineQueue';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
@@ -18,6 +19,13 @@ export function useSendPing() {
   const sendPing = useCallback(async ({ momentUri }: SendPingOptions = {}) => {
     const localId = Math.random().toString(36).slice(2) + Date.now().toString(36);
     setPingStatus('sending');
+
+    // Demo mode has no pair row behind it, so the Edge Function would reject
+    // the ping — play back the success state instead.
+    if (useAuthStore.getState().isDemo) {
+      setPingStatus('sent');
+      return;
+    }
 
     // Persist photo to app's documents dir so it survives temp-file clearing
     let persistedUri: string | undefined;
@@ -74,7 +82,7 @@ export function useSendPing() {
       setPingStatus('sent'); // optimistic; queue handles retry
       await enqueue(queueEntry);
     }
-  }, [isConnected, enqueue]);
+  }, [isConnected, enqueue, setPingStatus]);
 
   return { sendPing };
 }

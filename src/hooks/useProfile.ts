@@ -7,6 +7,7 @@ import type { Profile, Pair } from '@/types/database';
 
 export function useProfile() {
   const userId = useAuthStore((s) => s.user?.id);
+  const isDemo = useAuthStore((s) => s.isDemo);
   const setOwnProfile = useProfileStore((s) => s.setOwnProfile);
   const setPairId = useProfileStore((s) => s.setPairId);
 
@@ -14,15 +15,17 @@ export function useProfile() {
     queryKey: ['profile', userId],
     queryFn: async (): Promise<Profile | null> => {
       if (!userId) return null;
+      // maybeSingle: a user who has not completed onboarding has no row yet,
+      // and single() would reject that with PGRST116 instead of returning null.
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
       if (error) throw error;
-      return data as Profile;
+      return (data as Profile | null) ?? null;
     },
-    enabled: Boolean(userId),
+    enabled: Boolean(userId) && !isDemo,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -38,7 +41,7 @@ export function useProfile() {
         .select('id')
         .or(`requester_id.eq.${userId},receiver_id.eq.${userId}`)
         .eq('status', 'active')
-        .single()
+        .maybeSingle()
         .then(({ data }: { data: Pick<Pair, 'id'> | null }) => {
           setPairId(data?.id ?? null);
         });

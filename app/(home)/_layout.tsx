@@ -1,13 +1,13 @@
 import { Stack } from 'expo-router';
 import { usePingRealtime } from '@/hooks/usePingRealtime';
-import { useProfile } from '@/hooks/useProfile';
 import { usePartnerProfile } from '@/hooks/usePartnerProfile';
 import { useOfflineQueue } from '@/hooks/useOfflineQueue';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { IncomingPingOverlay } from '@/components/ping/IncomingPingOverlay';
 
 function HomeProviders() {
-  useProfile();
+  // useProfile() lives in the root layout — the auth guard needs it before
+  // this group is reachable.
   usePartnerProfile();
   usePingRealtime();
 

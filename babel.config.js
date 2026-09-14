@@ -9,7 +9,7 @@ module.exports = function (api) {
         root: ['./src'],
         alias: { '@': './src' },
       }],
-      'react-native-reanimated/plugin', // MUST be last
+      'react-native-worklets/plugin', // MUST be last (Reanimated 4 moved the plugin here)
     ],
   };
 };

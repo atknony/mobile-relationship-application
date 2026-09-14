@@ -2,7 +2,7 @@
 
 # Imm — Mobile Relationship App
 
-A minimalist couples app: one tap sends a "ping" (push notification + vibration) to your paired partner. Built with React Native (Expo SDK 54).
+A minimalist couples app: one tap sends a "ping" (push notification + vibration) to your paired partner. Built with React Native (Expo SDK 57).
 
 ## Running the app
 
@@ -17,12 +17,12 @@ npx expo start
 
 | Concern | Library | Version |
 |---|---|---|
-| Framework | Expo | SDK 54 |
-| Routing | expo-router | v6 (file-based) |
+| Framework | Expo | SDK 57 |
+| Routing | expo-router | v57 (file-based; versioned with the SDK since 55) |
 | Global state | Zustand | v5 |
 | Server/async state | TanStack Query | v5 |
 | Styling | NativeWind + Tailwind CSS | v4 + v3 |
-| Animation | react-native-reanimated | v4 |
+| Animation | react-native-reanimated + react-native-worklets | v4.5 / v0.10 |
 | Gestures | react-native-gesture-handler | v2 |
 | Haptics | expo-haptics | — |
 | Backend | @supabase/supabase-js | v2 |
@@ -211,13 +211,17 @@ Currently simplified: one-tap dissolve via `dissolve-pair` Edge Function. No mut
 
 ## Critical gotchas
 
-- **`react-native-reanimated/plugin` must be the last plugin in `babel.config.js`** — moving it breaks the Reanimated worklet system silently.
-- **`expo-file-system` v19 (SDK 54) has a new API.** The old `FileSystem.documentDirectory` / `copyAsync` / `makeDirectoryAsync` are removed. Use `expo-file-system/legacy` imports in hooks that need the legacy path-string API (`useSendPing`, `useOfflineQueue`).
+- **`react-native-worklets/plugin` must be the last plugin in `babel.config.js`** — moving it breaks the Reanimated worklet system silently. Reanimated 4 moved the Babel plugin into `react-native-worklets` (a required peer dep); the old `react-native-reanimated/plugin` path only works as a shim and fails bundling if `react-native-worklets` is not installed.
+- **`expo-file-system` (v19+, SDK 54+) has a new API.** The old `FileSystem.documentDirectory` / `copyAsync` / `makeDirectoryAsync` are removed from the main entry. Use `expo-file-system/legacy` imports in hooks that need the legacy path-string API (`useSendPing`, `useOfflineQueue`). The `./legacy` export still exists in SDK 57.
 - **NativeWind v4 requires Tailwind CSS v3**, not v4. The project pins `tailwindcss@^3.4.x` in `devDependencies`.
 - **Supabase session must use `expo-secure-store`** as the storage adapter (not AsyncStorage) — see `src/lib/supabase.ts`. `detectSessionInUrl: false` is required for React Native.
 - **`GestureHandlerRootView` must wrap the entire tree** — it's at the top of `app/_layout.tsx`. Without it, gesture-handler gestures fail silently on Android.
 - **`Gesture.Pan().minDistance(0)`** is used for the hold-to-ping interaction (not `LongPress`) because it fires `onBegin` immediately on touch and `onEnd` on release, giving us precise hold-duration tracking via `Date.now()`.
 - **Offline ping queue photos**: photo URIs from `expo-image-picker` point to OS temp dirs that may be cleared. `useSendPing` copies photos to `FileSystem.documentDirectory + 'ping-moments/'` before queuing.
 - **`expo-splash-screen`**: `SplashScreen.preventAutoHideAsync()` is called at module level in `app/_layout.tsx`. It's hidden only after both `sessionLoaded` and `fontsLoaded` are true.
+- **Expo Go on a phone requires the SDK Expo Go currently ships** (App Store/Play Store Expo Go only supports the latest SDK; older iOS Expo Go cannot be installed). Upgrade with `npx expo install expo@^<sdk>.0.0 --fix`, then `npx expo-doctor@latest`.
+- **SDK 55+ removed `newArchEnabled` and `android.edgeToEdgeEnabled` from `app.json`** (New Architecture and edge-to-edge are mandatory). SDK 57 also removed the top-level `splash` key — splash is configured through the `expo-splash-screen` config plugin entry in `plugins`.
+- **TypeScript 6 (SDK 57 default)**: `baseUrl` is deprecated (paths resolve relative to `tsconfig.json`), and side-effect imports must resolve to a typed module — `global.d.ts` declares `*.css` for the `import '../global.css'` NativeWind entry.
+- **Supabase phone OTP** needs an SMS provider (e.g. Twilio) configured in the Supabase dashboard; without it `signInWithOtp` fails at runtime even though the app boots.
 - **Env vars**: use `EXPO_PUBLIC_` prefix — Expo only exposes env vars with this prefix to the client bundle.
 - **`pairId` vs `partner_id`**: `profileStore.pairedWith` is the partner's user_id; `profileStore.pairId` is the pairs table UUID. Realtime uses `pairId`; auth guard uses `pairedWith`.

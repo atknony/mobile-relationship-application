@@ -15,10 +15,17 @@ export function useSupabaseSession() {
   const resetUnpair = useUnpairStore((s) => s.resetUnpair);
 
   useEffect(() => {
-    // Hydrate existing session on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
+    // Hydrate existing session on mount. A rejected read (e.g. SecureStore
+    // failing to unlock) must still flip sessionLoaded, or the root layout
+    // holds the splash screen forever.
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        setSession(session);
+      })
+      .catch(() => {
+        clearSession();
+      });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
