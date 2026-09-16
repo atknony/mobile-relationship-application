@@ -67,10 +67,17 @@ Deno.serve(async (req) => {
       return json({ error: 'Unauthorized' }, 401);
     }
 
-    const { localId, momentUrl } = await req.json() as {
+    const { localId, photoPath } = await req.json() as {
       localId?: string;
-      momentUrl?: string;
+      photoPath?: string;
     };
+
+    // The client supplies this path, so it must be proven to belong to the
+    // caller — otherwise a modified client could point a partner's feed at
+    // any object in the bucket.
+    if (photoPath && !photoPath.startsWith(`${user.id}/`)) {
+      return json({ error: 'Invalid photo path' }, 400);
+    }
 
     // Find the caller's active pair
     const { data: pair, error: pairError } = await supabase
@@ -90,7 +97,7 @@ Deno.serve(async (req) => {
       .insert({
         pair_id: pair.id,
         sender_id: user.id,
-        photo_url: momentUrl ?? null,
+        photo_path: photoPath ?? null,
       })
       .select('id')
       .single();
@@ -118,7 +125,7 @@ Deno.serve(async (req) => {
         const ticket = await sendExpoPush({
           token: partner.push_token,
           title: `${sender?.username ?? 'Your partner'} is thinking of you 💙`,
-          body: momentUrl ? 'Sent you a moment' : undefined,
+          body: photoPath ? 'Sent you a moment' : undefined,
           data: { type: 'ping', momentId: moment.id, senderId: user.id },
         });
 

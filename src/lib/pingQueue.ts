@@ -117,23 +117,25 @@ async function discardPhoto(entry: QueuedPing) {
 
 /** The one place a ping is actually uploaded and sent. */
 async function deliverPing(entry: QueuedPing): Promise<void> {
-  let momentUrl: string | undefined;
+  let photoPath: string | undefined;
 
   if (entry.momentUri) {
     const fileName = `${entry.localId}.jpg`;
+    // Per-user folder: the storage policies key off the first path segment.
     const { data, error } = await supabase.storage
       .from('moments')
-      .upload(`pings/${fileName}`, {
+      .upload(`${entry.userId}/${fileName}`, {
         uri: entry.momentUri,
         type: 'image/jpeg',
         name: fileName,
       } as unknown as File);
     if (error) throw error;
-    momentUrl = supabase.storage.from('moments').getPublicUrl(data.path).data.publicUrl;
+    // The bucket is private — store the path and sign at read time.
+    photoPath = data.path;
   }
 
   const { error } = await supabase.functions.invoke('send-ping', {
-    body: { localId: entry.localId, momentUrl },
+    body: { localId: entry.localId, photoPath },
   });
   if (error) throw error;
 }

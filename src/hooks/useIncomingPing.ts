@@ -25,7 +25,7 @@ export function useIncomingPing() {
       void Notifications?.scheduleNotificationAsync({
         content: {
           title: `${incomingPing.fromDisplayName} is thinking of you 💙`,
-          body: incomingPing.momentUrl ? 'Sent you a moment' : undefined,
+          body: incomingPing.momentPath ? 'Sent you a moment' : undefined,
           sound: true,
         },
         trigger: null, // fire immediately

@@ -10,6 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useIncomingPing } from '@/hooks/useIncomingPing';
+import { useSignedMomentUrl } from '@/hooks/useSignedMomentUrl';
 import { Avatar } from '@/components/ui/Avatar';
 import { useProfileStore } from '@/stores/profileStore';
 import { SPRING_BOUNCE } from '@/constants/timing';
@@ -46,6 +47,8 @@ export function IncomingPingOverlay() {
   const { incomingPing, dismiss } = useIncomingPing();
   const partnerProfile = useProfileStore((s) => s.partnerProfile);
   const insets = useSafeAreaInsets();
+  // The bucket is private, so the stored path is signed on demand.
+  const { data: momentUrl } = useSignedMomentUrl(incomingPing?.momentPath);
 
   if (!incomingPing) return null;
 
@@ -90,9 +93,9 @@ export function IncomingPingOverlay() {
               <Text className="font-nunito text-imm-muted text-sm">{timeAgo}</Text>
             </View>
 
-            {incomingPing.momentUrl ? (
+            {momentUrl ? (
               <Image
-                source={{ uri: incomingPing.momentUrl }}
+                source={{ uri: momentUrl }}
                 className="w-full rounded-3xl"
                 style={{ height: 200, resizeMode: 'cover' }}
               />

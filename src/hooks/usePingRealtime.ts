@@ -33,7 +33,7 @@ export function usePingRealtime() {
             id: row.id,
             fromUserId: row.sender_id,
             fromDisplayName: partnerProfile?.username ?? 'Your partner',
-            momentUrl: row.photo_url ?? undefined,
+            momentPath: row.photo_path ?? undefined,
             receivedAt: Date.now(),
           });
         }

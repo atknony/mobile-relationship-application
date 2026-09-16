@@ -10,7 +10,7 @@ export interface IncomingPing {
   id: string;
   fromUserId: string;
   fromDisplayName: string;
-  momentUrl?: string; // Supabase Storage URL
+  momentPath?: string; // Storage object path — signed for display, not a URL
   receivedAt: number;
 }
 
