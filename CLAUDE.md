@@ -7,30 +7,12 @@ A minimalist couples app: one tap sends a "ping" (push notification + vibration)
 ## Running the app
 
 ```bash
-# Start dev server
-npx expo start
-
 # .env is already filled in with Supabase credentials
 ```
 
 ## Tech stack
 
-| Concern | Library | Version |
-|---|---|---|
-| Framework | Expo | SDK 57 |
-| Routing | expo-router | v57 (file-based; versioned with the SDK since 55) |
-| Global state | Zustand | v5 |
-| Server/async state | TanStack Query | v5 |
-| Styling | NativeWind + Tailwind CSS | v4 + v3 |
-| Animation | react-native-reanimated + react-native-worklets | v4.5 / v0.10 |
-| Gestures | react-native-gesture-handler | v2 |
-| Haptics | expo-haptics | — |
-| Backend | @supabase/supabase-js | v2 |
-| Auth storage | expo-secure-store | — |
-| Offline queue | @react-native-async-storage/async-storage | — |
-| Network detect | @react-native-community/netinfo | — |
-| Photos | expo-image-picker + expo-file-system/legacy | — |
-| Font | @expo-google-fonts/nunito | — |
+See `package.json` for the current dependency and version list.
 
 ## Project structure
 
@@ -87,31 +69,13 @@ supabase/
 
 ## Design system
 
-```
-Background:  #F0EDFF  (soft lavender)   → bg-imm-bg
-Accent blue: #74B9FF  (sky blue)        → bg-imm-blue / text-imm-blue
-Accent coral:#FF6B6B  (coral/send)      → bg-imm-coral / text-imm-coral
-Text:        #2D1B69  (deep purple)     → text-imm-text
-Text muted:  #7B6BA8                    → text-imm-muted
-Font:        Nunito (loaded via expo-google-fonts)
-             font-nunito / font-nunito-semibold / font-nunito-bold / font-nunito-extrabold
-```
-
 All custom tokens are in `tailwind.config.js` under `theme.extend.colors.imm` and `fontFamily`.
 
 ## 3-state auth guard
 
-`app/_layout.tsx` reads Zustand synchronously and issues `<Redirect>`:
-
-```
-sessionLoaded=false   → splash screen stays up (SplashScreen.preventAutoHideAsync)
-!session              → /(auth)/phone
-session && !profile   → /(onboarding)/profile-setup
-profile && !pairedWith→ /(pair)/create-invite
-profile && pairedWith → <Slot /> → (home)/index
-```
-
-`pairedWith` is set from `profile.partner_id` (the partner's user_id). It is non-null only when the user has an active pair.
+`app/_layout.tsx` moves the user between `(auth)`/`(onboarding)`/`(pair)`/`(home)` groups from a
+`useEffect` (not `<Redirect>`) — see the comment above `RootNavigator` for why. `pairedWith` is set
+from `profile.partner_id` (the partner's user_id); it is non-null only when the user has an active pair.
 
 ## Supabase schema
 
@@ -181,22 +145,6 @@ RLS is enabled on all tables. Policies:
 - `useAnimatedReaction` watches `chargeProgress` in thirds → progressive haptics via `runOnJS(chargeHaptic)`
 - `PingRipple`: 3 SVG `AnimatedCircle`s driven by `useAnimatedProps` (strokeDashoffset)
 - `PingParticles`: 12 dots burst radially via `withSpring` on `burstTrigger` increment
-
-## Supabase integration points
-
-| Frontend call | Backend surface |
-|---|---|
-| `supabase.auth.signInWithOtp({ phone })` | Supabase Auth (phone OTP) |
-| `supabase.auth.verifyOtp({ phone, token, type: 'sms' })` | Supabase Auth |
-| `supabase.from('profiles').select/upsert` | `profiles` table |
-| `supabase.from('profiles').select` (partner) | `profiles` table (by id = partner_id) |
-| `supabase.channel(...).on('postgres_changes', { table: 'moments' })` | Realtime on `moments` table |
-| `supabase.functions.invoke('generate-invite-code')` | Edge Function |
-| `supabase.functions.invoke('redeem-invite-code', { body: { code } })` | Edge Function |
-| `supabase.functions.invoke('send-ping', { body })` | Edge Function |
-| `supabase.functions.invoke('dissolve-pair')` | Edge Function |
-| `supabase.storage.from('moments').upload(...)` | Storage bucket `moments` |
-| `supabase.storage.from('moments').getPublicUrl(...)` | Storage bucket `moments` |
 
 To regenerate types from the live schema:
 ```bash
