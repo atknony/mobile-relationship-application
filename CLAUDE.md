@@ -28,19 +28,24 @@ src/
   lib/
     supabase.ts             # Supabase client (SecureStore session adapter)
     queryClient.ts          # TanStack Query client
+    notifications.ts        # expo-notifications shim (null in Expo Go on Android)
+    pingQueue.ts            # SINGLE OWNER of the send path — see note below
   stores/                   # Zustand stores
     authStore.ts            # session, user, sessionLoaded
     profileStore.ts         # ownProfile, partnerProfile, pairedWith, pairId
     pingStore.ts            # pingStatus, offlineQueue, incomingPing
+    networkStore.ts         # isConnected (null until first NetInfo event)
     unpairStore.ts          # (reserved — not active, see unpair notes below)
   hooks/
     useSupabaseSession.ts   # onAuthStateChange → authStore (call once from root)
     useProfile.ts           # TanStack Query: own profile + fetches pair UUID
     usePartnerProfile.ts    # TanStack Query: partner profile (by partner_id)
     usePingRealtime.ts      # Supabase Realtime subscription on moments table
-    useSendPing.ts          # send ping, handles online/offline
-    useOfflineQueue.ts      # AsyncStorage queue persistence + drain on reconnect
-    useNetworkStatus.ts     # NetInfo listener, calls onReconnect callback
+    useSendPing.ts          # thin wrapper over lib/pingQueue.sendPing
+    useNetworkStatus.ts     # reads networkStore — owns no subscription
+    usePingFeedback.ts      # queue events → toast/haptics + ping status reset
+    usePushRegistration.ts  # Expo push token → profiles.push_token; tap handling
+    useSignedMomentUrl.ts   # signs a private storage path for display
     usePingAnimation.ts     # Reanimated hold-to-charge gesture + shared values
     useHaptics.ts           # Haptic pattern wrappers
     useIncomingPing.ts      # Overlay trigger + local notification when backgrounded
@@ -52,7 +57,7 @@ src/
     pair/                   # InviteCodeDisplay, InviteCodeInput
     unpair/                 # UnpairInitiator, UnpairPendingBanner (banner is stub)
   types/
-    database.ts             # Supabase table types (hand-stub — replace with generated)
+    database.ts             # Supabase table types (hand-written — see gotcha below)
     ping.ts                 # QueuedPing, IncomingPing, PingStatus
   constants/
     colors.ts               # Design tokens (mirror of tailwind.config.js)
@@ -60,10 +65,11 @@ src/
     hapticPatterns.ts       # Haptic style mappings
 
 supabase/
+  migrations/               # schema history — apply with `supabase db push`
   functions/
-    generate-invite-code/   # Creates pending pair + 6-char invite code
-    redeem-invite-code/     # Activates pair, sets partner_id on both profiles
-    send-ping/              # Inserts into moments table
+    generate-invite-code/   # Creates pending pair + 6-char invite code (15 min TTL)
+    redeem-invite-code/     # Atomically claims the invite, sets partner_id on both
+    send-ping/              # Inserts into moments + sends the Expo push
     dissolve-pair/          # Sets pair status=dissolved, clears partner_id
 ```
 
@@ -98,6 +104,7 @@ from `profile.partner_id` (the partner's user_id); it is non-null only when the 
 | requester_id | uuid | user who generated invite |
 | receiver_id | uuid | nullable — filled on redeem |
 | invite_code | text | nullable unique — cleared on activation |
+| expires_at | timestamptz | pending invites expire 15 min after creation |
 | status | text | 'pending' / 'active' / 'dissolved' |
 | created_at | timestamptz | |
 
@@ -107,12 +114,15 @@ from `profile.partner_id` (the partner's user_id); it is non-null only when the 
 | id | uuid | PK |
 | pair_id | uuid | FK → pairs |
 | sender_id | uuid | FK → auth.users |
-| photo_url | text | nullable — Supabase Storage URL |
-| viewed_at | timestamptz | nullable |
+| photo_path | text | nullable — Storage **path**, not a URL (sign at read time) |
+| client_id | text | nullable — client localId; unique per sender (idempotency) |
+| viewed_at | timestamptz | nullable — never written yet (read receipts unimplemented) |
 | created_at | timestamptz | |
 
 ### Storage bucket
-- `moments` — public bucket for ping photo uploads
+- `moments` — **private** bucket. Objects live at `<sender_user_id>/<local_id>.jpg`;
+  storage policies let the owner upload and the pair read. Display uses
+  `useSignedMomentUrl`; never persist a signed URL.
 
 ### Edge Functions (deployed)
 | Function | What it does |
@@ -157,10 +167,37 @@ Currently simplified: one-tap dissolve via `dissolve-pair` Edge Function. No mut
 `UnpairPendingBanner` is a stub (returns null). To add mutual consent later, create an
 `unpair_requests` table and restore the `initiate/confirm/decline` pattern in `useUnpairFlow`.
 
+## Ping send path
+
+`src/lib/pingQueue.ts` is the **only** place a ping is uploaded or sent, and it is a
+module singleton, not a hook. Drains fire from NetInfo/AppState callbacks when no
+component is mounted, and the root layout swaps route groups on sign-out, so a
+component-scoped owner would be torn down mid-drain. `initPingQueue()` is called once
+from `RootNavigator`. Hooks (`useSendPing`, `useNetworkStatus`) are thin readers —
+**do not give them subscriptions or call the queue from more than one place**, which
+is what previously produced duplicate listeners and double-sent pings.
+
+Only `sendPing` writes `pingStatus`. Drains report through `subscribeToPingQueue`
+events, which `usePingFeedback` turns into toasts/haptics — this is what keeps a
+background drain from overwriting an in-flight send's status.
+
 ## Critical gotchas
 
+- **Push notifications require a development build.** Expo Go has not supported remote
+  push since SDK 53, so in Expo Go `usePushRegistration` deliberately no-ops and
+  `profiles.push_token` stays null — pings then only arrive while the partner has the
+  app open. This is expected, not a bug. To test push: `eas build --profile development`,
+  plus FCM V1 credentials (Android) and an APNs key (iOS).
+- **Push delivery is best-effort and must never fail the ping.** The moment row is the
+  source of truth; Realtime still delivers in-app if the push fails. A ticket returning
+  `DeviceNotRegistered` clears that `push_token`.
+- **`moments.client_id` is an idempotency key.** A retry of a send whose response was
+  lost must collapse onto the original row — `send-ping` treats a 23505 as success.
+- **Invite redemption must stay a single conditional UPDATE.** Splitting it back into
+  select-then-update reopens the race where two people redeem the same code.
+
 - **`react-native-worklets/plugin` must be the last plugin in `babel.config.js`** — moving it breaks the Reanimated worklet system silently. Reanimated 4 moved the Babel plugin into `react-native-worklets` (a required peer dep); the old `react-native-reanimated/plugin` path only works as a shim and fails bundling if `react-native-worklets` is not installed.
-- **`expo-file-system` (v19+, SDK 54+) has a new API.** The old `FileSystem.documentDirectory` / `copyAsync` / `makeDirectoryAsync` are removed from the main entry. Use `expo-file-system/legacy` imports in hooks that need the legacy path-string API (`useSendPing`, `useOfflineQueue`). The `./legacy` export still exists in SDK 57.
+- **`expo-file-system` (v19+, SDK 54+) has a new API.** The old `FileSystem.documentDirectory` / `copyAsync` / `makeDirectoryAsync` are removed from the main entry. Use `expo-file-system/legacy` imports where the legacy path-string API is needed (`src/lib/pingQueue.ts`). The `./legacy` export still exists in SDK 57.
 - **NativeWind v4 requires Tailwind CSS v3**, not v4. The project pins `tailwindcss@^3.4.x` in `devDependencies`.
 - **Supabase session must use `expo-secure-store`** as the storage adapter (not AsyncStorage) — see `src/lib/supabase.ts`. `detectSessionInUrl: false` is required for React Native.
 - **`GestureHandlerRootView` must wrap the entire tree** — it's at the top of `app/_layout.tsx`. Without it, gesture-handler gestures fail silently on Android.
@@ -172,4 +209,9 @@ Currently simplified: one-tap dissolve via `dissolve-pair` Edge Function. No mut
 - **TypeScript 6 (SDK 57 default)**: `baseUrl` is deprecated (paths resolve relative to `tsconfig.json`), and side-effect imports must resolve to a typed module — `global.d.ts` declares `*.css` for the `import '../global.css'` NativeWind entry.
 - **Supabase phone OTP** needs an SMS provider (e.g. Twilio) configured in the Supabase dashboard; without it `signInWithOtp` fails at runtime even though the app boots.
 - **Env vars**: use `EXPO_PUBLIC_` prefix — Expo only exposes env vars with this prefix to the client bundle.
+- **Row types in `src/types/database.ts` must stay `type` aliases, not `interface`.**
+  supabase-js constrains each table's `Row` to `Record<string, unknown>`, and interfaces
+  have no implicit index signature — declaring them as interfaces silently widens every
+  Insert/Update payload to `never` and forces `as any` casts at every write site. The
+  file is still hand-written; regenerate with `supabase gen types` when convenient.
 - **`pairId` vs `partner_id`**: `profileStore.pairedWith` is the partner's user_id; `profileStore.pairId` is the pairs table UUID. Realtime uses `pairId`; auth guard uses `pairedWith`.
