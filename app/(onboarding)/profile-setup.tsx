@@ -25,8 +25,7 @@ export default function ProfileSetupScreen() {
     }
 
     setLoading(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('profiles')
       .upsert({
         id: userId,
