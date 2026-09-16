@@ -8,7 +8,8 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ivoron.mobilerelationshipapplication"
     },
     "android": {
       "adaptiveIcon": {
@@ -34,7 +35,21 @@
           "backgroundColor": "#F0EDFF"
         }
       ],
-      "expo-status-bar"
+      "expo-status-bar",
+      [
+        "expo-notifications",
+        {
+          "color": "#74B9FF",
+          "defaultChannel": "default"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Imm uses your photos so you can send a moment to your partner.",
+          "cameraPermission": "Imm uses your camera so you can send a moment to your partner."
+        }
+      ]
     ],
     "extra": {
       "router": {},

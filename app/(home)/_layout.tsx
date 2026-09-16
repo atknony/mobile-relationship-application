@@ -3,6 +3,7 @@ import { usePingRealtime } from '@/hooks/usePingRealtime';
 import { usePartnerProfile } from '@/hooks/usePartnerProfile';
 import { useOfflineQueue } from '@/hooks/useOfflineQueue';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { usePushRegistration } from '@/hooks/usePushRegistration';
 import { IncomingPingOverlay } from '@/components/ping/IncomingPingOverlay';
 
 function HomeProviders() {
@@ -10,6 +11,7 @@ function HomeProviders() {
   // this group is reachable.
   usePartnerProfile();
   usePingRealtime();
+  usePushRegistration();
 
   const { drainQueue } = useOfflineQueue();
   useNetworkStatus(drainQueue);

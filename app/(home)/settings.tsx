@@ -2,6 +2,7 @@ import { View, Text, Pressable, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { clearPushToken } from '@/hooks/usePushRegistration';
 import { useProfileStore } from '@/stores/profileStore';
 import { Avatar } from '@/components/ui/Avatar';
 import { UnpairInitiator } from '@/components/unpair/UnpairInitiator';
@@ -14,6 +15,9 @@ export default function SettingsScreen() {
   const partnerProfile = useProfileStore((s) => s.partnerProfile);
 
   const handleSignOut = async () => {
+    // Clear the push token first — once signed out, RLS blocks the write and
+    // this device would keep receiving pings meant for the next user.
+    if (ownProfile?.id) await clearPushToken(ownProfile.id);
     await supabase.auth.signOut();
     // useSupabaseSession fires → clears all stores → root layout redirects to /(auth)/phone
   };
