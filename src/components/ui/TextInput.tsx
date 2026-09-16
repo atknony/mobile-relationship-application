@@ -5,6 +5,7 @@ import {
   Text,
   type TextInputProps,
 } from 'react-native';
+import { colors } from '@/constants/colors';
 
 interface Props extends Omit<TextInputProps, 'style'> {
   label?: string;
@@ -35,7 +36,7 @@ export function TextInput({ label, error, ...props }: Props) {
           border-2 ${focused ? 'border-imm-blue' : 'border-transparent'}
           ${error ? 'border-imm-coral' : ''}
         `}
-        placeholderTextColor="#7B6BA8"
+        placeholderTextColor={colors.muted}
       />
       {error ? (
         <Text className="font-nunito text-sm text-imm-coral">{error}</Text>

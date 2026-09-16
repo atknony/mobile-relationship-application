@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { View, Text, Pressable, Image } from 'react-native';
+import { View, Text, Pressable, Image, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -7,10 +7,16 @@ import { useProfileStore } from '@/stores/profileStore';
 import { usePingStore } from '@/stores/pingStore';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useSendPing } from '@/hooks/useSendPing';
+import { usePingAnimation } from '@/hooks/usePingAnimation';
 import { PingButton } from '@/components/ping/PingButton';
-import { Avatar } from '@/components/ui/Avatar';
-import { MAX_QUEUED_PINGS } from '@/constants/timing';
+import { PartnerPulse } from '@/components/ping/PartnerPulse';
+import { CameraGlyph } from '@/components/ui/CameraGlyph';
+import { colors } from '@/constants/colors';
 
+/**
+ * The only screen that matters. Wordless by design — no status text and no
+ * instructional copy, because the vessel animation is the confirmation.
+ */
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -22,19 +28,32 @@ export default function HomeScreen() {
 
   const [momentUri, setMomentUri] = useState<string | undefined>();
 
-  const handlePickPhoto = useCallback(async () => {
+  const handleSend = useCallback(() => {
+    void sendPing({ momentUri });
+    setMomentUri(undefined);
+  }, [sendPing, momentUri]);
+
+  // Owned here rather than inside PingButton so the header ring can ride the
+  // same values.
+  const animation = usePingAnimation({
+    onSend: handleSend,
+    onEarlyRelease: () => {
+      // The haptic is the whole response — nothing sends.
+    },
+    disabled: pingStatus === 'sending',
+  });
+
+  const pickFromLibrary = useCallback(async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       quality: 0.7,
       allowsEditing: true,
       aspect: [4, 3],
     });
-    if (!result.canceled && result.assets[0]) {
-      setMomentUri(result.assets[0].uri);
-    }
+    if (!result.canceled && result.assets[0]) setMomentUri(result.assets[0].uri);
   }, []);
 
-  const handleCameraPhoto = useCallback(async () => {
+  const takePhoto = useCallback(async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') return;
     const result = await ImagePicker.launchCameraAsync({
@@ -42,17 +61,18 @@ export default function HomeScreen() {
       allowsEditing: true,
       aspect: [4, 3],
     });
-    if (!result.canceled && result.assets[0]) {
-      setMomentUri(result.assets[0].uri);
-    }
+    if (!result.canceled && result.assets[0]) setMomentUri(result.assets[0].uri);
   }, []);
 
-  const handleSend = useCallback(async () => {
-    await sendPing({ momentUri });
-    setMomentUri(undefined);
-  }, [sendPing, momentUri]);
-
-  const partnerName = partnerProfile?.username ?? '...';
+  // The design collapses the old gallery/camera pair into one button, so the
+  // choice moves into a sheet rather than being dropped.
+  const handlePickPhoto = useCallback(() => {
+    Alert.alert('Send a moment', undefined, [
+      { text: 'Take photo', onPress: () => void takePhoto() },
+      { text: 'Choose from library', onPress: () => void pickFromLibrary() },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }, [takePhoto, pickFromLibrary]);
 
   return (
     <View
@@ -60,89 +80,97 @@ export default function HomeScreen() {
       style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
     >
       {/* Header */}
-      <View className="flex-row items-center justify-between px-6 py-4">
-        <View className="flex-row items-center gap-3">
-          <Avatar
+      <View className="flex-row items-center justify-between" style={{ paddingHorizontal: 22, paddingVertical: 12 }}>
+        <View className="flex-row items-center" style={{ gap: 11 }}>
+          <PartnerPulse
             uri={partnerProfile?.avatar_url}
             name={partnerProfile?.username}
-            size={40}
+            burst={animation.burst}
           />
           <View>
-            <Text className="font-nunito-bold text-imm-text text-base">
-              {partnerName}
+            <Text className="font-display text-imm-text" style={{ fontSize: 17, lineHeight: 20 }}>
+              {partnerProfile?.username ?? ''}
             </Text>
             {isConnected === false && (
-              <Text className="font-nunito text-imm-coral text-xs">offline</Text>
+              <Text className="font-nunito text-imm-muted" style={{ fontSize: 11 }}>
+                offline — {offlineQueue.length > 0 ? `${offlineQueue.length} waiting` : 'will send later'}
+              </Text>
             )}
           </View>
         </View>
 
-        <Pressable onPress={() => router.push('/(home)/settings')} hitSlop={12}>
-          <Text className="text-2xl">⚙️</Text>
+        <Pressable
+          onPress={() => router.push('/(home)/settings')}
+          hitSlop={12}
+          accessibilityLabel="Settings"
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 19,
+            backgroundColor: 'rgba(255,255,255,0.72)',
+            alignItems: 'center',
+            justifyContent: 'center',
+            shadowColor: '#2D1B69',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.08,
+            shadowRadius: 4,
+            elevation: 1,
+          }}
+        >
+          <View
+            style={{
+              width: 13,
+              height: 13,
+              borderRadius: 6.5,
+              borderWidth: 1.5,
+              borderColor: colors.muted,
+            }}
+          />
         </Pressable>
       </View>
 
-      {/* Offline badge */}
-      {offlineQueue.length > 0 && (
-        <View className="mx-6 mb-2 bg-imm-muted/20 rounded-2xl px-4 py-2">
-          <Text className="font-nunito text-imm-muted text-xs text-center">
-            {offlineQueue.length} ping{offlineQueue.length > 1 ? 's' : ''} queued — will send when back online
-          </Text>
-        </View>
-      )}
+      {/* The vessel */}
+      <View className="flex-1 items-center justify-center">
+        <PingButton animation={animation} />
+      </View>
 
-      {/* Main area */}
-      <View className="flex-1 items-center justify-center gap-10">
-        {/* Status text */}
-        <View className="items-center gap-1">
-          {pingStatus === 'sent' ? (
-            <Text className="font-nunito-semibold text-imm-blue text-base">
-              ping sent 💙
-            </Text>
-          ) : pingStatus === 'failed' ? (
-            <Text className="font-nunito-semibold text-imm-coral text-base">
-              couldn&apos;t send — we&apos;ll keep trying
-            </Text>
-          ) : (
-            <Text className="font-nunito text-imm-muted text-base">
-              let them know you&apos;re thinking of them
-            </Text>
-          )}
-        </View>
-
-        {/* Ping button */}
-        <PingButton
-          onSend={handleSend}
-          disabled={isConnected === false && offlineQueue.length >= MAX_QUEUED_PINGS}
-        />
-
-        {/* Photo moment section */}
-        <View className="items-center gap-3">
-          {momentUri ? (
-            <View className="items-center gap-2">
-              <Image
-                source={{ uri: momentUri }}
-                className="w-48 rounded-2xl"
-                style={{ height: 128 }}
-                resizeMode="cover"
-              />
-              <Pressable onPress={() => setMomentUri(undefined)}>
-                <Text className="font-nunito text-imm-muted text-xs">remove</Text>
-              </Pressable>
-            </View>
-          ) : (
-            <View className="flex-row gap-4">
-              <Pressable onPress={handlePickPhoto} className="items-center gap-1">
-                <Text className="text-2xl">🖼️</Text>
-                <Text className="font-nunito text-imm-muted text-xs">gallery</Text>
-              </Pressable>
-              <Pressable onPress={handleCameraPhoto} className="items-center gap-1">
-                <Text className="text-2xl">📷</Text>
-                <Text className="font-nunito text-imm-muted text-xs">camera</Text>
-              </Pressable>
-            </View>
-          )}
-        </View>
+      {/* Photo moment */}
+      <View className="items-center" style={{ paddingBottom: 10, gap: 10 }}>
+        {momentUri ? (
+          <View className="items-center" style={{ gap: 8 }}>
+            <Image
+              source={{ uri: momentUri }}
+              style={{ width: 96, height: 72, borderRadius: 14 }}
+              resizeMode="cover"
+            />
+            <Pressable onPress={() => setMomentUri(undefined)} hitSlop={8}>
+              <Text className="font-nunito text-imm-muted" style={{ fontSize: 12 }}>
+                remove
+              </Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            onPress={handlePickPhoto}
+            hitSlop={8}
+            accessibilityLabel="Add a photo"
+            style={{
+              width: 54,
+              height: 54,
+              borderRadius: 27,
+              backgroundColor: 'rgba(255,255,255,0.66)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              shadowColor: '#2D1B69',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.08,
+              shadowRadius: 10,
+              elevation: 2,
+            }}
+          >
+            <CameraGlyph />
+          </Pressable>
+        )}
       </View>
     </View>
   );

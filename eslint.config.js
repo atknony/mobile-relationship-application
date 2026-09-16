@@ -4,7 +4,13 @@ const expoConfig = require('eslint-config-expo/flat');
 module.exports = defineConfig([
   expoConfig,
   {
-    ignores: ['dist/*', 'node_modules/*', 'supabase/functions/*'],
+    ignores: [
+      'dist/*',
+      'node_modules/*',
+      'supabase/functions/*',
+      // Design reference prototypes, not source.
+      'Couples app thinking-of-you button/**',
+    ],
   },
   {
     // Jest globals. ESLint 9 flat config ignores `/* eslint-env */` comments,

@@ -13,6 +13,7 @@ import {
   Nunito_800ExtraBold,
   useFonts,
 } from '@expo-google-fonts/nunito';
+import { Newsreader_400Regular_Italic } from '@expo-google-fonts/newsreader';
 
 import { queryClient } from '@/lib/queryClient';
 import { initPingQueue } from '@/lib/pingQueue';
@@ -75,6 +76,7 @@ function RootNavigator() {
     Nunito_600SemiBold,
     Nunito_700Bold,
     Nunito_800ExtraBold,
+    Newsreader_400Regular_Italic,
   });
 
   const router = useRouter();

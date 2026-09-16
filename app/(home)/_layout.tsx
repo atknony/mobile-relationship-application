@@ -4,6 +4,7 @@ import { usePartnerProfile } from '@/hooks/usePartnerProfile';
 import { usePushRegistration } from '@/hooks/usePushRegistration';
 import { usePingFeedback } from '@/hooks/usePingFeedback';
 import { IncomingPingOverlay } from '@/components/ping/IncomingPingOverlay';
+import { colors } from '@/constants/colors';
 
 function HomeProviders() {
   // useProfile() lives in the root layout — the auth guard needs it before
@@ -24,7 +25,7 @@ export default function HomeLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: '#F0EDFF' },
+          contentStyle: { backgroundColor: colors.bg },
         }}
       />
       <IncomingPingOverlay />

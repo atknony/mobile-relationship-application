@@ -1,59 +1,51 @@
-import { View, Text } from 'react-native';
-import Animated from 'react-native-reanimated';
+import { View } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
-import { usePingAnimation } from '@/hooks/usePingAnimation';
-import { PingRipple } from './PingRipple';
-import { PingParticles } from './PingParticles';
-import { usePingStore } from '@/stores/pingStore';
+import type { PingAnimation } from '@/hooks/usePingAnimation';
+import { VesselBloom } from './vessel/VesselBloom';
+import { VesselBody } from './vessel/VesselBody';
+import { VesselBraces } from './vessel/VesselBraces';
+import { VesselGauge } from './vessel/VesselGauge';
+import { VesselSparks } from './vessel/VesselSparks';
+import { VesselWash } from './vessel/VesselWash';
+import { VESSEL_SIZE, ZONE } from '@/constants/vessel';
 
-interface PingButtonProps {
-  onSend: () => void;
-  disabled?: boolean;
-}
-
-const BUTTON_SIZE = 120;
-
-export function PingButton({ onSend, disabled = false }: PingButtonProps) {
-  const pingStatus = usePingStore((s) => s.pingStatus);
-
-  const handleEarlyRelease = () => {
-    // Subtle feedback — nothing dramatic needed, haptic handles it
-  };
-
-  const { chargeProgress, burstTrigger, gesture, buttonAnimatedStyle } =
-    usePingAnimation({
-      onSend,
-      onEarlyRelease: handleEarlyRelease,
-      disabled: disabled || pingStatus === 'sending',
-    });
+/**
+ * Hold to send. The vessel fills under pressure, overflows on release and eases
+ * back to rest — the screen is wordless, so this animation is the only feedback
+ * that a ping went.
+ *
+ * The animation is owned by the screen rather than created here, so the header's
+ * pulse ring can ride the same charge value. Layers paint back to front, and the
+ * sparks sit outside the vessel so they are not clipped when they leave frame.
+ */
+export function PingButton({ animation }: { animation: PingAnimation }) {
+  const { p, burst, ready, clock, gesture, reducedMotion } = animation;
 
   return (
-    <View className="items-center justify-center">
-      <PingParticles burstTrigger={burstTrigger} />
-      <PingRipple chargeProgress={chargeProgress} />
+    <View style={{ width: ZONE, height: ZONE, alignItems: 'center', justifyContent: 'center' }}>
+      <VesselWash p={p} burst={burst} />
+      <VesselBraces p={p} />
+      <VesselGauge p={p} ready={ready} />
+      <VesselBloom burst={burst} reducedMotion={reducedMotion} />
+      {!reducedMotion && <VesselSparks burst={burst} />}
 
       <GestureDetector gesture={gesture}>
-        <Animated.View
-          style={[
-            buttonAnimatedStyle,
-            {
-              width: BUTTON_SIZE,
-              height: BUTTON_SIZE,
-              borderRadius: BUTTON_SIZE / 2,
-              alignItems: 'center',
-              justifyContent: 'center',
-              shadowColor: '#74B9FF',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.4,
-              shadowRadius: 12,
-              elevation: 8,
-            },
-          ]}
+        <View
+          style={{
+            width: VESSEL_SIZE,
+            height: VESSEL_SIZE,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
-          <Text className="font-nunito-bold text-white text-center text-xs leading-tight">
-            {disabled ? 'offline' : 'hold\nme'}
-          </Text>
-        </Animated.View>
+          <VesselBody
+            p={p}
+            burst={burst}
+            ready={ready}
+            clock={clock}
+            reducedMotion={reducedMotion}
+          />
+        </View>
       </GestureDetector>
     </View>
   );
