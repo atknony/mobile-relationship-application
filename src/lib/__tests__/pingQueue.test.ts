@@ -157,6 +157,21 @@ describe('draining', () => {
   });
 });
 
+describe('sending', () => {
+  it('reports failure rather than hanging when the photo copy fails', async () => {
+    const fs = require('expo-file-system/legacy');
+    (fs.copyAsync as jest.Mock).mockRejectedValueOnce(new Error('no space'));
+
+    const { queue, store } = await loadQueue();
+    await queue.sendPing({ momentUri: 'file:///tmp/photo.jpg' });
+
+    // Staying on 'sending' would leave the ping button disabled for the rest
+    // of the session.
+    expect(store.usePingStore.getState().pingStatus).toBe('failed');
+    expect(mockInvoke).not.toHaveBeenCalled();
+  });
+});
+
 describe('sign-out', () => {
   it('purges the persisted queue, not just the in-memory one', async () => {
     const { queue, store } = await loadQueue();

@@ -158,13 +158,24 @@ export async function sendPing({ momentUri }: { momentUri?: string } = {}): Prom
   }
 
   const localId = Math.random().toString(36).slice(2) + Date.now().toString(36);
-  const entry: QueuedPing = {
-    localId,
-    userId: auth.user?.id,
-    momentUri: momentUri ? await persistPhoto(momentUri, localId) : undefined,
-    createdAt: Date.now(),
-    retryCount: 0,
-  };
+
+  let entry: QueuedPing;
+  try {
+    entry = {
+      localId,
+      userId: auth.user?.id,
+      momentUri: momentUri ? await persistPhoto(momentUri, localId) : undefined,
+      createdAt: Date.now(),
+      retryCount: 0,
+    };
+  } catch {
+    // Copying the photo can fail (source cleared, no space). Letting this throw
+    // would leave pingStatus on 'sending', which keeps the button disabled for
+    // the rest of the session.
+    usePingStore.getState().setPingStatus('failed');
+    emit({ type: 'sendFailed', localId });
+    return;
+  }
 
   if (useNetworkStore.getState().isConnected === false) {
     usePingStore.getState().setPingStatus('sent');
