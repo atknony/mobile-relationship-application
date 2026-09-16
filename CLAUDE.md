@@ -22,7 +22,7 @@ app/                        # expo-router screens (file-based routing)
   (auth)/                   # unauthenticated: phone.tsx, verify.tsx
   (onboarding)/             # authenticated, no profile: profile-setup.tsx
   (pair)/                   # has profile, no partner: create-invite.tsx, enter-invite.tsx
-  (home)/                   # fully paired: index.tsx (ping screen), settings.tsx
+  (home)/                   # fully paired: index.tsx (send), thread.tsx, settings.tsx
 
 src/
   lib/
@@ -75,7 +75,13 @@ supabase/
 
 ## Design system
 
-All custom tokens are in `tailwind.config.js` under `theme.extend.colors.imm` and `fontFamily`.
+All custom tokens are in `tailwind.config.js` under `theme.extend.colors.imm` and `fontFamily`,
+mirrored in `src/constants/colors.ts` for Reanimated/SVG/StyleSheet contexts. Keep the two in sync.
+
+Two rules the tokens do not enforce:
+- **Warm is you, cool is her.** Colour is the carrier of who-sent-what everywhere.
+- **`font-display` (Newsreader italic) is for names and headlines only** — never labels,
+  values, buttons or numbers.
 
 ## 3-state auth guard
 
@@ -95,6 +101,8 @@ from `profile.partner_id` (the partner's user_id); it is non-null only when the 
 | avatar_url | text | nullable |
 | partner_id | uuid | nullable — partner's user_id |
 | push_token | text | nullable — Expo push token |
+| quiet_hours_start | smallint | nullable — minutes since local midnight; null = off |
+| quiet_hours_end | smallint | nullable |
 | created_at | timestamptz | |
 
 **`pairs`**
@@ -119,10 +127,14 @@ from `profile.partner_id` (the partner's user_id); it is non-null only when the 
 | viewed_at | timestamptz | nullable — never written yet (read receipts unimplemented) |
 | created_at | timestamptz | |
 
-### Storage bucket
-- `moments` — **private** bucket. Objects live at `<sender_user_id>/<local_id>.jpg`;
-  storage policies let the owner upload and the pair read. Display uses
-  `useSignedMomentUrl`; never persist a signed URL.
+### Storage buckets
+Both are **private**, both key their policies off the first path segment being the
+owner's user id, and both are read at display time through `useSignedUrl` — the
+database stores a **path**, never a URL, and a signed URL is never persisted.
+
+- `moments` — ping photos at `<sender_user_id>/<local_id>.jpg`
+- `avatars` — profile photos at `<user_id>/avatar.jpg` (`profiles.avatar_url`
+  holds a path despite the column name; `Avatar` signs it)
 
 ### Edge Functions (deployed)
 | Function | What it does |
@@ -166,6 +178,19 @@ npx supabase gen types typescript --project-id tzhkrhxnfjephtrxbmvp > src/types/
 Currently simplified: one-tap dissolve via `dissolve-pair` Edge Function. No mutual consent.
 `UnpairPendingBanner` is a stub (returns null). To add mutual consent later, create an
 `unpair_requests` table and restore the `initiate/confirm/decline` pattern in `useUnpairFlow`.
+
+## The send interaction
+
+`src/hooks/usePingAnimation.ts` drives the vessel from **one `useFrameCallback` loop**, not
+per-phase `withTiming`. The settle curve after release is a non-monotonic ad-hoc formula no
+standard easing expresses, and the ready-squash and meniscus wobble need a free-running clock
+that every layer samples at the same instant. Every number lives in `src/constants/vessel.ts`
+and came from the design prototype — they were tuned, not derived, so don't "simplify" them.
+
+Two things that look wrong but are deliberate: the threshold is compared against **linear**
+hold progress (not the eased value, which would desync the haptics from the visuals), and
+`performance.now()` is called **inside** the worklet (mixing it with `Date.now()` in the
+gesture would mix epochs).
 
 ## Ping send path
 
