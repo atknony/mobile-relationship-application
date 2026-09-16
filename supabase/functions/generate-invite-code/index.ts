@@ -1,5 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+// Short-lived by design: a code is shared in the moment, and an outstanding
+// one is a standing offer to overwrite whoever you are paired with.
+const INVITE_TTL_MS = 15 * 60 * 1000;
+
 Deno.serve(async (req) => {
   try {
     const supabase = createClient(
@@ -19,6 +23,18 @@ Deno.serve(async (req) => {
       return json({ error: 'Unauthorized' }, 401);
     }
 
+    // An already-paired user must not mint a code: redeeming it would
+    // overwrite their existing partner_id and strand the current pair.
+    const { data: ownProfile } = await supabase
+      .from('profiles')
+      .select('partner_id')
+      .eq('id', user.id)
+      .single();
+
+    if (ownProfile?.partner_id) {
+      return json({ error: 'You are already paired with someone' }, 409);
+    }
+
     // Delete any existing pending invite from this user (one active invite at a time)
     await supabase
       .from('pairs')
@@ -32,6 +48,7 @@ Deno.serve(async (req) => {
       .join('');
 
     // Create pair record — receiver_id filled in when code is redeemed
+    const expiresAt = new Date(Date.now() + INVITE_TTL_MS).toISOString();
     const { error: insertError } = await supabase
       .from('pairs')
       .insert({
@@ -39,6 +56,7 @@ Deno.serve(async (req) => {
         receiver_id: null,
         invite_code: code,
         status: 'pending',
+        expires_at: expiresAt,
       });
 
     if (insertError) {
@@ -46,7 +64,7 @@ Deno.serve(async (req) => {
       return json({ error: 'Could not generate code' }, 500);
     }
 
-    return json({ code });
+    return json({ code, expiresAt });
   } catch (err) {
     console.error(err);
     return json({ error: 'Internal server error' }, 500);
