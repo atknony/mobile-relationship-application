@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
-import * as Notifications from 'expo-notifications';
+import { Notifications } from '@/lib/notifications';
 import { usePingStore } from '@/stores/pingStore';
 import { INCOMING_PING_AUTODISMISS_MS } from '@/constants/timing';
 
@@ -22,7 +22,7 @@ export function useIncomingPing() {
 
     // Fire local notification if app is backgrounded
     if (AppState.currentState !== 'active') {
-      void Notifications.scheduleNotificationAsync({
+      void Notifications?.scheduleNotificationAsync({
         content: {
           title: `${incomingPing.fromDisplayName} is thinking of you 💙`,
           body: incomingPing.momentUrl ? 'Sent you a moment' : undefined,

@@ -2,7 +2,6 @@ import '../global.css';
 import { useEffect } from 'react';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import * as Notifications from 'expo-notifications';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -21,10 +20,11 @@ import { useProfile } from '@/hooks/useProfile';
 import { useAuthStore } from '@/stores/authStore';
 import { useProfileStore } from '@/stores/profileStore';
 import { ToastProvider } from '@/components/ui/Toast';
+import { Notifications } from '@/lib/notifications';
 
 SplashScreen.preventAutoHideAsync();
 
-Notifications.setNotificationHandler({
+Notifications?.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowBanner: true,
     shouldPlaySound: true,
