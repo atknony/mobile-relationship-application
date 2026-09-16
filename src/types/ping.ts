@@ -1,5 +1,6 @@
 export interface QueuedPing {
   localId: string;
+  userId?: string;    // owner — a queue surviving a sign-out must not be sent by the next user
   momentUri?: string; // local file:// URI (copied to documentDirectory)
   createdAt: number;  // Date.now()
   retryCount: number;

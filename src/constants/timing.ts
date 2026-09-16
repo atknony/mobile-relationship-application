@@ -7,6 +7,7 @@ export const INCOMING_PING_AUTODISMISS_MS = 8000;
 export const TOAST_AUTODISMISS_MS = 3000;
 export const OFFLINE_PING_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 export const MAX_PING_RETRIES = 3;
+export const MAX_QUEUED_PINGS = 5;        // offline send is blocked past this
 export const UNPAIR_EXPIRY_HOURS = 24;
 
 export const CHARGE_EASING = Easing.out(Easing.quad);

@@ -9,6 +9,7 @@ import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useSendPing } from '@/hooks/useSendPing';
 import { PingButton } from '@/components/ping/PingButton';
 import { Avatar } from '@/components/ui/Avatar';
+import { MAX_QUEUED_PINGS } from '@/constants/timing';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -71,7 +72,7 @@ export default function HomeScreen() {
             <Text className="font-nunito-bold text-imm-text text-base">
               {partnerName}
             </Text>
-            {!isConnected && (
+            {isConnected === false && (
               <Text className="font-nunito text-imm-coral text-xs">offline</Text>
             )}
           </View>
@@ -107,7 +108,10 @@ export default function HomeScreen() {
         </View>
 
         {/* Ping button */}
-        <PingButton onSend={handleSend} disabled={!isConnected && offlineQueue.length >= 5} />
+        <PingButton
+          onSend={handleSend}
+          disabled={isConnected === false && offlineQueue.length >= MAX_QUEUED_PINGS}
+        />
 
         {/* Photo moment section */}
         <View className="items-center gap-3">

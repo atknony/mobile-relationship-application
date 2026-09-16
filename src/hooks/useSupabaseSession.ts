@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { resetPingQueue } from '@/lib/pingQueue';
 import { useAuthStore } from '@/stores/authStore';
 import { useProfileStore } from '@/stores/profileStore';
-import { usePingStore } from '@/stores/pingStore';
 import { useUnpairStore } from '@/stores/unpairStore';
 
 // Listens to Supabase auth state for the entire app lifetime.
@@ -11,7 +11,6 @@ export function useSupabaseSession() {
   const setSession = useAuthStore((s) => s.setSession);
   const clearSession = useAuthStore((s) => s.clearSession);
   const clearProfiles = useProfileStore((s) => s.clearProfiles);
-  const clearOfflineQueue = usePingStore((s) => s.clearOfflineQueue);
   const resetUnpair = useUnpairStore((s) => s.resetUnpair);
 
   useEffect(() => {
@@ -34,7 +33,9 @@ export function useSupabaseSession() {
         } else {
           clearSession();
           clearProfiles();
-          clearOfflineQueue();
+          // Purges AsyncStorage too — clearing only the store left the queue on
+          // disk, so the next user to sign in sent the previous user's pings.
+          void resetPingQueue();
           resetUnpair();
         }
       }

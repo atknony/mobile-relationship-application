@@ -15,6 +15,7 @@ import {
 } from '@expo-google-fonts/nunito';
 
 import { queryClient } from '@/lib/queryClient';
+import { initPingQueue } from '@/lib/pingQueue';
 import { useSupabaseSession } from '@/hooks/useSupabaseSession';
 import { useProfile } from '@/hooks/useProfile';
 import { useAuthStore } from '@/stores/authStore';
@@ -52,6 +53,11 @@ const ENTRY = {
 
 function RootNavigator() {
   useSupabaseSession();
+
+  // Owns the offline queue's NetInfo/AppState listeners for the app's lifetime.
+  // In an effect rather than module scope so nothing touches NetInfo during
+  // bundle evaluation.
+  useEffect(() => initPingQueue(), []);
 
   // Own profile decides between onboarding / pair / home, so it is fetched
   // here rather than in (home) — which the guard can only reach once the
