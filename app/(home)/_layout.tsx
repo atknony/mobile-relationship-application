@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { usePingRealtime } from '@/hooks/usePingRealtime';
 import { usePartnerProfile } from '@/hooks/usePartnerProfile';
 import { usePushRegistration } from '@/hooks/usePushRegistration';
+import { usePingFeedback } from '@/hooks/usePingFeedback';
 import { IncomingPingOverlay } from '@/components/ping/IncomingPingOverlay';
 
 function HomeProviders() {
@@ -11,6 +12,7 @@ function HomeProviders() {
   usePartnerProfile();
   usePingRealtime();
   usePushRegistration();
+  usePingFeedback();
 
   return null;
 }

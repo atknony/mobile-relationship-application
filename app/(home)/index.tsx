@@ -100,9 +100,13 @@ export default function HomeScreen() {
             <Text className="font-nunito-semibold text-imm-blue text-base">
               ping sent 💙
             </Text>
+          ) : pingStatus === 'failed' ? (
+            <Text className="font-nunito-semibold text-imm-coral text-base">
+              couldn&apos;t send — we&apos;ll keep trying
+            </Text>
           ) : (
             <Text className="font-nunito text-imm-muted text-base">
-              let them know you're thinking of them
+              let them know you&apos;re thinking of them
             </Text>
           )}
         </View>

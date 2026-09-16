@@ -175,8 +175,10 @@ export async function sendPing({ momentUri }: { momentUri?: string } = {}): Prom
     void discardPhoto(entry);
     usePingStore.getState().setPingStatus('sent');
   } catch {
-    usePingStore.getState().setPingStatus('sent');
+    // Queued for retry, but the user asked to send *now* and it did not go —
+    // saying "sent" here is the lie this whole status flow exists to avoid.
     await enqueuePing(entry);
+    usePingStore.getState().setPingStatus('failed');
     emit({ type: 'sendFailed', localId });
   }
 }
