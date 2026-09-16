@@ -21,6 +21,8 @@ const demoOwnProfile: Profile = {
   avatar_url: null,
   partner_id: DEMO_PARTNER_ID,
   push_token: null,
+  quiet_hours_start: null,
+  quiet_hours_end: null,
   created_at: new Date().toISOString(),
 };
 
@@ -30,6 +32,8 @@ const demoPartnerProfile: Profile = {
   avatar_url: null,
   partner_id: DEMO_USER_ID,
   push_token: null,
+  quiet_hours_start: null,
+  quiet_hours_end: null,
   created_at: new Date().toISOString(),
 };
 

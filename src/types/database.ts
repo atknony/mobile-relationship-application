@@ -14,6 +14,8 @@ export type Profile = {
   avatar_url: string | null;
   partner_id: string | null;  // partner's user_id (auth.uid of the other person)
   push_token: string | null;
+  quiet_hours_start: number | null; // minutes since local midnight; null = off
+  quiet_hours_end: number | null;
   created_at: string;
 };
 

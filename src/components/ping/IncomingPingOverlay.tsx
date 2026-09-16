@@ -1,7 +1,7 @@
 import { Modal, View, Text, Pressable, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useIncomingPing } from '@/hooks/useIncomingPing';
-import { useSignedMomentUrl } from '@/hooks/useSignedMomentUrl';
+import { useSignedMomentUrl } from '@/hooks/useSignedUrl';
 import { useSendPing } from '@/hooks/useSendPing';
 import { Avatar } from '@/components/ui/Avatar';
 import { ReplyOrb } from './ReplyOrb';

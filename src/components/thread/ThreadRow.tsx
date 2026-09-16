@@ -1,5 +1,5 @@
 import { View, Text, Image } from 'react-native';
-import { useSignedMomentUrl } from '@/hooks/useSignedMomentUrl';
+import { useSignedMomentUrl } from '@/hooks/useSignedUrl';
 import { colors } from '@/constants/colors';
 import type { ThreadPing } from '@/hooks/useMomentsThread';
 

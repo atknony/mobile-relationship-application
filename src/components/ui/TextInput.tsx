@@ -16,10 +16,21 @@ export function TextInput({ label, error, ...props }: Props) {
   const [focused, setFocused] = useState(false);
 
   return (
-    <View className="w-full gap-1">
+    <View style={{ gap: 8 }}>
       {label ? (
-        <Text className="font-nunito-semibold text-sm text-imm-muted">{label}</Text>
+        <Text
+          className="font-nunito-semibold"
+          style={{
+            fontSize: 10,
+            letterSpacing: 1.6,
+            textTransform: 'uppercase',
+            color: colors.muted,
+          }}
+        >
+          {label}
+        </Text>
       ) : null}
+
       <RNTextInput
         {...props}
         onFocus={(e) => {
@@ -30,16 +41,33 @@ export function TextInput({ label, error, ...props }: Props) {
           setFocused(false);
           props.onBlur?.(e);
         }}
-        className={`
-          w-full rounded-2xl px-4 py-4
-          bg-white font-nunito text-base text-imm-text
-          border-2 ${focused ? 'border-imm-blue' : 'border-transparent'}
-          ${error ? 'border-imm-coral' : ''}
-        `}
         placeholderTextColor={colors.muted}
+        selectionColor={colors.mine}
+        style={{
+          backgroundColor: colors.white,
+          borderRadius: 18,
+          padding: 17,
+          borderWidth: 1.5,
+          borderColor: error
+            ? colors.emberText
+            : focused
+              ? colors.warm
+              : 'rgba(45,27,105,0.09)',
+          fontFamily: 'Nunito_400Regular',
+          fontSize: 17,
+          color: colors.text,
+          shadowColor: '#2D1B69',
+          shadowOffset: { width: 0, height: 3 },
+          shadowOpacity: 0.05,
+          shadowRadius: 14,
+          elevation: 1,
+        }}
       />
+
       {error ? (
-        <Text className="font-nunito text-sm text-imm-coral">{error}</Text>
+        <Text className="font-nunito" style={{ fontSize: 12, color: colors.emberText }}>
+          {error}
+        </Text>
       ) : null}
     </View>
   );

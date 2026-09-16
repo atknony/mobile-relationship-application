@@ -38,12 +38,12 @@ export function useProfile() {
     if (query.data?.partner_id && userId) {
       supabase
         .from('pairs')
-        .select('id')
+        .select('id, created_at')
         .or(`requester_id.eq.${userId},receiver_id.eq.${userId}`)
         .eq('status', 'active')
         .maybeSingle()
-        .then(({ data }: { data: Pick<Pair, 'id'> | null }) => {
-          setPairId(data?.id ?? null);
+        .then(({ data }: { data: Pick<Pair, 'id' | 'created_at'> | null }) => {
+          setPairId(data?.id ?? null, data?.created_at ?? null);
         });
     } else {
       setPairId(null);

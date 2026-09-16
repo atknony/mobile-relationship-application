@@ -1,38 +1,56 @@
-import { useState } from 'react';
-import { View, Text, KeyboardAvoidingView, Platform } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { View, Text, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
-import { Button } from '@/components/ui/Button';
-import { TextInput } from '@/components/ui/TextInput';
+import { CodeInput, type CodeInputHandle } from '@/components/ui/CodeInput';
 import { useToast } from '@/components/ui/Toast';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { colors } from '@/constants/colors';
+
+const RESEND_SECONDS = 24;
 
 export default function VerifyScreen() {
   const { phone } = useLocalSearchParams<{ phone: string }>();
-  const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(RESEND_SECONDS);
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
+  const inputRef = useRef<CodeInputHandle>(null);
 
-  const handleVerify = async () => {
-    if (otp.length < 4) {
-      showToast('Enter the code we sent you', 'error');
+  // A real countdown — previously there was no way to ask for another code.
+  useEffect(() => {
+    if (secondsLeft <= 0) return;
+    const id = setInterval(() => setSecondsLeft((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(id);
+  }, [secondsLeft]);
+
+  const handleVerify = useCallback(
+    async (token: string) => {
+      setLoading(true);
+      const { error } = await supabase.auth.verifyOtp({
+        phone: phone ?? '',
+        token,
+        type: 'sms',
+      });
+      setLoading(false);
+
+      if (error) showToast('Invalid code. Try again.', 'error');
+      // On success useSupabaseSession fires and the guard redirects.
+    },
+    [phone, showToast]
+  );
+
+  const handleResend = useCallback(async () => {
+    if (secondsLeft > 0 || !phone) return;
+    const { error } = await supabase.auth.signInWithOtp({ phone });
+    if (error) {
+      showToast(error.message, 'error');
       return;
     }
-
-    setLoading(true);
-    const { error } = await supabase.auth.verifyOtp({
-      phone: phone ?? '',
-      token: otp.trim(),
-      type: 'sms',
-    });
-    setLoading(false);
-
-    if (error) {
-      showToast('Invalid code. Try again.', 'error');
-    }
-    // On success, useSupabaseSession fires and the root layout redirects automatically
-  };
+    setSecondsLeft(RESEND_SECONDS);
+    showToast('Code sent again', 'success');
+  }, [phone, secondsLeft, showToast]);
 
   return (
     <KeyboardAvoidingView
@@ -40,32 +58,44 @@ export default function VerifyScreen() {
       style={{ flex: 1 }}
     >
       <View
-        className="flex-1 bg-imm-bg px-6 justify-center gap-8"
-        style={{ paddingBottom: insets.bottom + 24 }}
+        className="flex-1 bg-imm-bg justify-center"
+        style={{
+          paddingHorizontal: 26,
+          paddingBottom: insets.bottom + 24,
+          gap: 32,
+        }}
       >
-        <View className="gap-2">
-          <Text className="font-nunito-bold text-imm-text text-2xl">
+        <View style={{ gap: 10 }}>
+          <Text className="font-display text-imm-text" style={{ fontSize: 32 }}>
             Enter the code
           </Text>
-          <Text className="font-nunito text-imm-muted">
+          <Text className="font-nunito text-imm-muted" style={{ fontSize: 15 }}>
             Sent to {phone}
           </Text>
         </View>
 
-        <View className="gap-4">
-          <TextInput
-            label="Verification code"
-            value={otp}
-            onChangeText={setOtp}
-            keyboardType="number-pad"
-            placeholder="123456"
-            maxLength={6}
-            autoFocus
-          />
-          <Button onPress={handleVerify} loading={loading}>
-            Verify
-          </Button>
-        </View>
+        {loading ? (
+          <LoadingSpinner />
+        ) : (
+          <View style={{ gap: 20 }}>
+            {/* The six-cell input is shared with invite entry — same shape, same states. */}
+            <CodeInput ref={inputRef} mode="numeric" onComplete={handleVerify} />
+
+            <Pressable onPress={handleResend} disabled={secondsLeft > 0} hitSlop={8}>
+              <Text
+                className="font-nunito text-center"
+                style={{
+                  fontSize: 13,
+                  color: secondsLeft > 0 ? colors.muted : colors.emberText,
+                }}
+              >
+                {secondsLeft > 0
+                  ? `Resend in 0:${String(secondsLeft).padStart(2, '0')}`
+                  : 'Send a new code'}
+              </Text>
+            </Pressable>
+          </View>
+        )}
       </View>
     </KeyboardAvoidingView>
   );

@@ -1,8 +1,10 @@
 import { View, Text, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { gradients } from '@/constants/colors';
+import { useSignedUrl } from '@/hooks/useSignedUrl';
 
 interface AvatarProps {
+  /** A storage path in the private `avatars` bucket, signed here for display. */
   uri?: string | null;
   name?: string | null;
   size?: number;
@@ -14,6 +16,7 @@ interface AvatarProps {
  */
 export function Avatar({ uri, name, size = 56 }: AvatarProps) {
   const initial = name?.trim()?.[0]?.toUpperCase() ?? '';
+  const { data: signedUrl } = useSignedUrl(uri, 'avatars');
 
   return (
     <View
@@ -29,8 +32,8 @@ export function Avatar({ uri, name, size = 56 }: AvatarProps) {
         elevation: 3,
       }}
     >
-      {uri ? (
-        <Image source={{ uri }} style={{ width: size, height: size }} resizeMode="cover" />
+      {signedUrl ? (
+        <Image source={{ uri: signedUrl }} style={{ width: size, height: size }} resizeMode="cover" />
       ) : (
         <LinearGradient
           colors={[...gradients.coolAvatar]}
