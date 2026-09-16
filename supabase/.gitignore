@@ -1,0 +1,4 @@
+# Supabase CLI scratch state — machine-local, not shared.
+# Re-created by `supabase link`.
+.branches
+.temp
