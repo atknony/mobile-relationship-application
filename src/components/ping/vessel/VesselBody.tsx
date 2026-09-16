@@ -3,6 +3,7 @@ import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reani
 import { LinearGradient } from 'expo-linear-gradient';
 import { RadialGlow } from './RadialGlow';
 import { gradients } from '@/constants/colors';
+import { shadows } from '@/constants/shadows';
 import {
   CORE_SIZE,
   FILL_MAX,
@@ -122,14 +123,9 @@ export function VesselBody({ p, burst, ready, clock, reducedMotion }: VesselBody
           backgroundColor: 'rgba(255,255,255,0.62)',
           alignItems: 'center',
           justifyContent: 'center',
-          // Static shadow: iOS can animate these, Android only has elevation, so
-          // a tightening shadow would not match across platforms. The compression
-          // is carried by scale instead.
-          shadowColor: '#2D1B69',
-          shadowOffset: { width: 0, height: 12 },
-          shadowOpacity: 0.14,
-          shadowRadius: 30,
-          elevation: 8,
+          // Static: an animated shadow would cost a repaint every frame on both
+          // platforms. The compression is carried by scale instead.
+          boxShadow: shadows.vessel,
         },
       ]}
     >

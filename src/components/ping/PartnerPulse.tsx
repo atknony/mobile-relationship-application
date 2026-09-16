@@ -6,10 +6,10 @@ const SIZE = 42;
 
 /**
  * The partner's avatar with a ring that pulses about a second after a ping is
- * released — the ping arriving at her end.
+ * released — the ping arriving at their end.
  *
  * Driven by the release clock, not the charge: the handoff describes this as
- * "it arrives at her end ~1s after release". (The HTML prototype wires it to the
+ * "it arrives at their end ~1s after release". (The HTML prototype wires it to the
  * charge value instead, which would pulse during the hold and read as the wrong
  * thing entirely.)
  */

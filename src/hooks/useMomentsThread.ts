@@ -42,14 +42,13 @@ function dayKey(date: Date): string {
 export function useMomentsThread() {
   const pairId = useProfileStore((s) => s.pairId);
   const userId = useAuthStore((s) => s.user?.id);
-  const isDemo = useAuthStore((s) => s.isDemo);
   const incomingPing = usePingStore((s) => s.incomingPing);
   const offlineQueue = usePingStore((s) => s.offlineQueue);
   const queryClient = useQueryClient();
 
   const query = useQuery({
     queryKey: ['moments', pairId],
-    enabled: Boolean(pairId) && !isDemo,
+    enabled: Boolean(pairId),
     staleTime: 30_000,
     queryFn: async (): Promise<Moment[]> => {
       if (!pairId) return [];

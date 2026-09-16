@@ -1,13 +1,20 @@
-import { useState } from 'react';
-import { View, Text, KeyboardAvoidingView, Platform } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  KeyboardAvoidingView,
+  Platform,
+  type TextInput as RNTextInput,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '@/lib/supabase';
-import { DEMO_PHONE, enterDemoMode } from '@/lib/demoMode';
+import { isDevShorthand, signInDevUser } from '@/lib/devUsers';
 import { Button } from '@/components/ui/Button';
 import { TextInput } from '@/components/ui/TextInput';
 import { useToast } from '@/components/ui/Toast';
+import { useAppStore } from '@/stores/appStore';
 import { gradients } from '@/constants/colors';
 
 export default function PhoneScreen() {
@@ -16,14 +23,28 @@ export default function PhoneScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
+  const inputRef = useRef<RNTextInput>(null);
+  const isRevealed = useAppStore((s) => s.isRevealed);
+
+  // Not `autoFocus`: at launch this screen can mount under the startup cover
+  // while the guard is still on its way to (home), and the keyboard — a system
+  // window — pops over the cover for exactly as long as that takes. Focusing
+  // from an effect keyed on the reveal covers both orders: mounting before the
+  // app is revealed, and being navigated to once it already is.
+  useEffect(() => {
+    if (isRevealed) inputRef.current?.focus();
+  }, [isRevealed]);
 
   const handleSendOtp = async () => {
     const cleaned = phone.trim().replace(/\s/g, '');
 
-    // Dev-only bypass — skips the SMS provider and lands on the ping screen.
-    if (__DEV__ && cleaned === DEMO_PHONE) {
-      enterDemoMode();
-      showToast('Demo mode — signed in with sample data', 'info');
+    // Dev-only shortcut: "01" / "02" sign in as the seeded test accounts, so
+    // both sides of the pairing flow can be driven without an SMS provider.
+    if (isDevShorthand(cleaned)) {
+      setLoading(true);
+      const message = await signInDevUser(cleaned);
+      setLoading(false);
+      if (message) showToast(message, 'error');
       return;
     }
 
@@ -79,7 +100,7 @@ export default function PhoneScreen() {
             onChangeText={setPhone}
             keyboardType="phone-pad"
             placeholder="+1 234 567 8900"
-            autoFocus
+            ref={inputRef}
           />
           <Button onPress={handleSendOtp} loading={loading}>
             Continue
@@ -87,6 +108,11 @@ export default function PhoneScreen() {
           <Text className="font-nunito text-imm-muted text-center" style={{ fontSize: 12 }}>
             We use it once, to find your person.
           </Text>
+          {__DEV__ ? (
+            <Text className="font-nunito text-imm-muted text-center" style={{ fontSize: 11, opacity: 0.7 }}>
+              dev: enter 01 or 02 for the seeded test accounts
+            </Text>
+          ) : null}
         </View>
       </View>
     </KeyboardAvoidingView>

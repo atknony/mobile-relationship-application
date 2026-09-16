@@ -1,13 +1,10 @@
-import { useEffect } from 'react';
 import { View, Text } from 'react-native';
-import { useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Button } from '@/components/ui/Button';
 import { RadialGlow } from '@/components/ping/vessel/RadialGlow';
 import { gradients } from '@/constants/colors';
 
 const WASH = 560;
-const POLL_MS = 5000;
 
 const WASH_STOPS = [
   { offset: '0%', color: '#74B9FF', opacity: 0.4 },
@@ -18,21 +15,12 @@ const WASH_STOPS = [
  * After sharing a code there was previously no feedback at all — you were left
  * on the invite screen wondering whether anything had happened.
  *
- * Nothing pushes pair activation to the requester: their own profile row changes
- * server-side when the other person redeems, and the app has no Realtime
- * subscription on profiles. So this polls the profile query while it is on
- * screen; the auth guard takes over the moment partner_id lands.
+ * This used to own the poll that watches for the pair going active, which meant
+ * the watch only existed while this component was mounted. `useProfile` owns it
+ * now (see UNPAIRED_POLL_MS there) so it runs on every pair screen; the auth
+ * guard takes over the moment partner_id lands. This is only the picture.
  */
 export function WaitingForPartner({ onResend }: { onResend: () => void }) {
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      void queryClient.invalidateQueries({ queryKey: ['profile'] });
-    }, POLL_MS);
-    return () => clearInterval(id);
-  }, [queryClient]);
-
   return (
     <View className="items-center" style={{ gap: 26 }}>
       <View

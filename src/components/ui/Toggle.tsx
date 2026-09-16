@@ -2,6 +2,7 @@ import { Pressable } from 'react-native';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, gradients } from '@/constants/colors';
+import { shadows } from '@/constants/shadows';
 
 const TRACK_W = 46;
 const TRACK_H = 28;
@@ -54,11 +55,7 @@ export function Toggle({
             height: KNOB,
             borderRadius: KNOB / 2,
             backgroundColor: colors.white,
-            shadowColor: '#2D1B69',
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.25,
-            shadowRadius: 3,
-            elevation: 2,
+            boxShadow: shadows.knob,
           },
         ]}
       />

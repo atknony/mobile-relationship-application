@@ -41,8 +41,8 @@ function Spark({
 
 /**
  * Nine sparks thrown upward out of frame on release — the ping leaving toward
- * her. They live in their own tall layer, as siblings of the vessel rather than
- * children, so the vessel's clipping never cuts them off.
+ * your partner. They live in their own tall layer, as siblings of the vessel
+ * rather than children, so the vessel's clipping never cuts them off.
  *
  * Plain views rather than SVG circles: transform and opacity on a view stay on
  * the UI thread without routing through the SVG shadow-node path each frame.

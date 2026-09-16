@@ -1,6 +1,8 @@
 import '../global.css';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Keyboard, StyleSheet, View } from 'react-native';
 import { Slot, useRouter, useSegments } from 'expo-router';
+import type { Session } from '@supabase/supabase-js';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -21,8 +23,12 @@ import { useSupabaseSession } from '@/hooks/useSupabaseSession';
 import { useProfile } from '@/hooks/useProfile';
 import { useAuthStore } from '@/stores/authStore';
 import { useProfileStore } from '@/stores/profileStore';
+import { useAppStore } from '@/stores/appStore';
 import { ToastProvider } from '@/components/ui/Toast';
 import { Notifications } from '@/lib/notifications';
+import { colors } from '@/constants/colors';
+import { STARTUP_SETTLE_TIMEOUT_MS } from '@/constants/timing';
+import type { Profile } from '@/types/database';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -51,6 +57,23 @@ const ENTRY = {
   [PAIR]: '/(pair)/create-invite',
   [HOME]: '/(home)/',
 } as const;
+
+type Group = keyof typeof ENTRY;
+
+/**
+ * Shared by the render and the guard effect so the two can never disagree about
+ * where this session belongs.
+ */
+function resolveGroup(
+  session: Session | null,
+  ownProfile: Profile | null,
+  pairedWith: string | null
+): Group {
+  if (!session) return AUTH;
+  if (!ownProfile) return ONBOARDING;
+  if (!pairedWith) return PAIR;
+  return HOME;
+}
 
 function RootNavigator() {
   useSupabaseSession();
@@ -87,9 +110,49 @@ function RootNavigator() {
   const profilePending = Boolean(session) && profileQuery.isLoading;
   const ready = sessionLoaded && (fontsLoaded || Boolean(fontError)) && !profilePending;
 
+  // `ready` only means the answer is known — the navigator can still be showing
+  // the route it booted into. expo-router resolves "/" to (home)/index before
+  // anything has been decided, so that is what the very first frames paint.
+  const settled = ready && segments[0] === resolveGroup(session, ownProfile, pairedWith);
+
+  // Insurance, and never the normal path. Holding the splash until the guard
+  // agrees with the router is only safe if that agreement is guaranteed, and a
+  // splash that never lifts is a worse bug than the flash this replaces. If
+  // settling somehow does not happen, give up and show the app: a flash is
+  // recoverable, an app that paints nothing is not.
+  const [gaveUpWaiting, setGaveUpWaiting] = useState(false);
+
   useEffect(() => {
-    if (ready) void SplashScreen.hideAsync();
-  }, [ready]);
+    if (settled || !ready) return;
+    const timer = setTimeout(() => setGaveUpWaiting(true), STARTUP_SETTLE_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [ready, settled]);
+
+  const revealed = settled || gaveUpWaiting;
+
+  useEffect(() => {
+    // Gated on `revealed`, not `ready`. Effects run in order, so hiding on
+    // `ready` uncovered the navigator one whole render before the guard below
+    // called replace() — and replace() needs another render to land. That gap
+    // is the flash: the splash lifts on whatever route the app booted into.
+    if (revealed) void SplashScreen.hideAsync();
+  }, [revealed]);
+
+  // Published so screens can hold off taking focus. The cover stops the route
+  // underneath being seen, but the keyboard is a system window and draws over
+  // it, so an autofocusing input on a screen the guard is about to replace
+  // still shows at launch.
+  useEffect(() => {
+    useAppStore.getState().setRevealed(revealed);
+  }, [revealed]);
+
+  useEffect(() => {
+    if (revealed) return;
+    // Belt and braces for a keyboard this app did not ask for: Android can
+    // restore the IME from the previous launch before any JS runs, and this is
+    // the earliest point at which it can be told otherwise.
+    Keyboard.dismiss();
+  }, [revealed]);
 
   useEffect(() => {
     if (!ready) return;
@@ -99,21 +162,26 @@ function RootNavigator() {
     // for one tick and would bounce the user through the wrong group.
     const auth = useAuthStore.getState();
     const profile = useProfileStore.getState();
-
-    const target = !auth.session
-      ? AUTH
-      : !profile.ownProfile
-        ? ONBOARDING
-        : !profile.pairedWith
-          ? PAIR
-          : HOME;
+    const target = resolveGroup(auth.session, profile.ownProfile, profile.pairedWith);
 
     if (segments[0] !== target) {
       router.replace(ENTRY[target]);
     }
   }, [ready, session, ownProfile, pairedWith, segments, router]);
 
-  return <Slot />;
+  return (
+    <>
+      {/* The navigator has to be mounted from the first render or expo-router
+          throws "Attempted to navigate before mounting the Root Layout
+          component" — so it is covered rather than withheld. colors.bg is the
+          splash's own backgroundColor (see the expo-splash-screen plugin entry
+          in app.json), so the handover is invisible however the native splash
+          happens to be timed, and the cover takes the touches that nobody
+          should be able to land on a screen that is still being decided. */}
+      <Slot />
+      {!revealed && <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg }]} />}
+    </>
+  );
 }
 
 export default function RootLayout() {

@@ -2,6 +2,7 @@ import { View, Text, Share } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
+import { shadows } from '@/constants/shadows';
 
 /**
  * The code, as six tiles, with the two things you actually do with it.
@@ -37,11 +38,7 @@ export function InviteCodeDisplay({
         paddingHorizontal: 24,
         gap: 22,
         width: '100%',
-        shadowColor: '#2D1B69',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.08,
-        shadowRadius: 30,
-        elevation: 4,
+        boxShadow: shadows.cardTall,
       }}
     >
       <View className="flex-row justify-center" style={{ gap: 7 }}>

@@ -1,7 +1,7 @@
-import { View, Text, Pressable, FlatList } from 'react-native';
+import { View, Text, FlatList } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 import { useMomentsThread, type ThreadRow } from '@/hooks/useMomentsThread';
+import { BackButton } from '@/components/ui/BackButton';
 import { ThreadDayDivider, ThreadPingRow } from '@/components/thread/ThreadRow';
 import { useProfileStore } from '@/stores/profileStore';
 import { colors } from '@/constants/colors';
@@ -32,27 +32,10 @@ function Sparkline({ days }: { days: { mine: number; theirs: number }[] }) {
   );
 }
 
-function BackGlyph() {
-  return (
-    <View
-      style={{
-        width: 9,
-        height: 9,
-        borderLeftWidth: 1.5,
-        borderBottomWidth: 1.5,
-        borderColor: colors.text,
-        transform: [{ rotate: '45deg' }],
-        marginLeft: 3,
-      }}
-    />
-  );
-}
-
 /**
  * The history the `moments` table has always stored and nothing ever displayed.
  */
 export default function ThreadScreen() {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const partnerProfile = useProfileStore((s) => s.partnerProfile);
   const { rows, sparkline, isLoading, error } = useMomentsThread();
@@ -72,21 +55,7 @@ export default function ThreadScreen() {
         className="flex-row items-center"
         style={{ paddingHorizontal: 22, paddingTop: 10, paddingBottom: 14 }}
       >
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={12}
-          accessibilityLabel="Back"
-          style={{
-            width: 34,
-            height: 34,
-            borderRadius: 17,
-            backgroundColor: 'rgba(255,255,255,0.72)',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <BackGlyph />
-        </Pressable>
+        <BackButton fallback="/(home)/" />
 
         <Text
           className="font-display text-imm-text"

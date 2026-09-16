@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { subscribeToPingQueue } from '@/lib/pingQueue';
 import { usePingStore } from '@/stores/pingStore';
 import { useToast } from '@/components/ui/Toast';
@@ -16,11 +17,19 @@ export function usePingFeedback() {
   const pingStatus = usePingStore((s) => s.pingStatus);
   const { showToast } = useToast();
   const { errorHaptic } = useHaptics();
+  const queryClient = useQueryClient();
 
   useEffect(
     () =>
       subscribeToPingQueue((event) => {
         switch (event.type) {
+          case 'sent':
+            // Marks the thread stale so it refetches — immediately if it is on
+            // screen, otherwise the next time it is opened. Without this the
+            // 30s staleTime meant a ping sent just before opening the thread
+            // was simply missing from it.
+            void queryClient.invalidateQueries({ queryKey: ['moments'] });
+            break;
           case 'sendFailed':
             // The send screen is wordless: a failed ping is felt, then shown as
             // a queued row in the thread rather than as a banner over the vessel.
@@ -39,11 +48,12 @@ export function usePingFeedback() {
             );
             break;
           case 'drained':
-            // Success is visible in the thread; nothing to announce.
+            // Nothing to announce, but the rows moved from queued to delivered.
+            void queryClient.invalidateQueries({ queryKey: ['moments'] });
             break;
         }
       }),
-    [showToast, errorHaptic]
+    [showToast, errorHaptic, queryClient]
   );
 
   useEffect(() => {

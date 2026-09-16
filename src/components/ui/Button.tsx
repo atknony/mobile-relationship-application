@@ -2,6 +2,7 @@ import { Pressable, Text, ActivityIndicator, View } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, gradients } from '@/constants/colors';
+import { shadows } from '@/constants/shadows';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -40,10 +41,22 @@ export function Button({
     scale.value = withTiming(1, { duration: 120 });
   };
 
+  // "Continue" was rendering as "Continu". Android measures the label with the
+  // fallback face before Nunito-Bold has been swapped in, so the text node ends
+  // up a hair narrower than the glyphs it then paints and the last character is
+  // clipped off. flexShrink: 0 stops the node being squeezed to that stale
+  // measurement, and includeFontPadding: false drops Android's extra metrics so
+  // the label still sits on the vertical centre.
   const label = (
     <Text
       className="font-nunito-bold"
-      style={{ fontSize: 16, color: variant === 'primary' ? colors.white : colors.text }}
+      style={{
+        fontSize: 16,
+        color: variant === 'primary' ? colors.white : colors.text,
+        flexShrink: 0,
+        includeFontPadding: false,
+        textAlign: 'center',
+      }}
     >
       {children}
     </Text>
@@ -79,13 +92,7 @@ export function Button({
           end={{ x: 0.5, y: 1 }}
           style={[
             shared,
-            {
-              shadowColor: colors.heat,
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: 0.3,
-              shadowRadius: 20,
-              elevation: 4,
-            },
+            { boxShadow: shadows.warm },
           ]}
         >
           {body}

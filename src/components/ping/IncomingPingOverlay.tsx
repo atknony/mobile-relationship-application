@@ -7,6 +7,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { ReplyOrb } from './ReplyOrb';
 import { RadialGlow } from './vessel/RadialGlow';
 import { useProfileStore } from '@/stores/profileStore';
+import { shadows } from '@/constants/shadows';
 
 const WASH = 680;
 
@@ -17,7 +18,7 @@ const WASH_STOPS = [
 ];
 
 /**
- * Her ping lands. Her name is the loudest thing on screen — the whole screen
+ * Their ping lands. Their name is the loudest thing on screen — the whole screen
  * warms rather than showing a card on a dimmed background.
  */
 export function IncomingPingOverlay() {
@@ -116,11 +117,7 @@ export function IncomingPingOverlay() {
                 width: '100%',
                 borderRadius: 26,
                 overflow: 'hidden',
-                shadowColor: '#2D1B69',
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.1,
-                shadowRadius: 28,
-                elevation: 4,
+                boxShadow: shadows.cardLift,
               }}
             >
               <Image source={{ uri: momentUrl }} style={{ height: 212 }} resizeMode="cover" />

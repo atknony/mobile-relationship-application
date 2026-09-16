@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import * as FileSystem from 'expo-file-system/legacy';
 import { supabase } from '@/lib/supabase';
+import { uploadJpeg } from '@/lib/uploadImage';
 import { useAuthStore } from '@/stores/authStore';
 import { useNetworkStore } from '@/stores/networkStore';
 import { usePingStore } from '@/stores/pingStore';
@@ -26,6 +27,7 @@ const PHOTO_DIR = `${FileSystem.documentDirectory}ping-moments/`;
 const MAX_BUFFERED_EVENTS = 20;
 
 export type PingQueueEvent =
+  | { type: 'sent'; localId: string }
   | { type: 'drained'; delivered: number; remaining: number }
   | { type: 'dropped'; count: number; reason: 'exhausted' | 'expired' }
   | { type: 'sendFailed'; localId: string };
@@ -120,18 +122,13 @@ async function deliverPing(entry: QueuedPing): Promise<void> {
   let photoPath: string | undefined;
 
   if (entry.momentUri) {
-    const fileName = `${entry.localId}.jpg`;
     // Per-user folder: the storage policies key off the first path segment.
-    const { data, error } = await supabase.storage
-      .from('moments')
-      .upload(`${entry.userId}/${fileName}`, {
-        uri: entry.momentUri,
-        type: 'image/jpeg',
-        name: fileName,
-      } as unknown as File);
-    if (error) throw error;
     // The bucket is private — store the path and sign at read time.
-    photoPath = data.path;
+    photoPath = await uploadJpeg(
+      'moments',
+      `${entry.userId}/${entry.localId}.jpg`,
+      entry.momentUri
+    );
   }
 
   const { error } = await supabase.functions.invoke('send-ping', {
@@ -149,13 +146,6 @@ export async function enqueuePing(entry: QueuedPing): Promise<void> {
 export async function sendPing({ momentUri }: { momentUri?: string } = {}): Promise<void> {
   const auth = useAuthStore.getState();
   usePingStore.getState().setPingStatus('sending');
-
-  // Demo mode has no pair row behind it, so the Edge Function would reject the
-  // ping — play back the success state instead.
-  if (auth.isDemo) {
-    usePingStore.getState().setPingStatus('sent');
-    return;
-  }
 
   const localId = Math.random().toString(36).slice(2) + Date.now().toString(36);
 
@@ -187,6 +177,11 @@ export async function sendPing({ momentUri }: { momentUri?: string } = {}): Prom
     await deliverPing(entry);
     void discardPhoto(entry);
     usePingStore.getState().setPingStatus('sent');
+    // An online send never touches the offline queue, so the thread had no way
+    // to learn about it: the moments query is stale-for-30s and was only ever
+    // invalidated by a ping *arriving*. Your own pings appeared only once your
+    // partner sent one.
+    emit({ type: 'sent', localId });
   } catch {
     // Queued for retry, but the user asked to send *now* and it did not go —
     // saying "sent" here is the lie this whole status flow exists to avoid.

@@ -2,25 +2,19 @@ import { View, Text, Pressable, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { supabase } from '@/lib/supabase';
-import { clearPushToken } from '@/hooks/usePushRegistration';
-import { usePreferences, formatMinutes } from '@/hooks/usePreferences';
+import { usePreferences } from '@/hooks/usePreferences';
 import { useProfileStore } from '@/stores/profileStore';
 import { useAuthStore } from '@/stores/authStore';
 import { Avatar } from '@/components/ui/Avatar';
 import { Toggle } from '@/components/ui/Toggle';
+import { SignOutLink } from '@/components/ui/SignOutLink';
 import { UnpairInitiator } from '@/components/unpair/UnpairInitiator';
 import { colors, gradients } from '@/constants/colors';
-
-const DEFAULT_QUIET: [number, number] = [23 * 60, 7 * 60];
+import { shadows } from '@/constants/shadows';
 
 const CARD = {
   borderRadius: 26,
-  shadowColor: '#2D1B69',
-  shadowOffset: { width: 0, height: 6 },
-  shadowOpacity: 0.07,
-  shadowRadius: 22,
-  elevation: 2,
+  boxShadow: shadows.card,
 } as const;
 
 const HAIRLINE = { height: 1, backgroundColor: 'rgba(45,27,105,0.07)' } as const;
@@ -72,16 +66,7 @@ export default function SettingsScreen() {
   const partnerProfile = useProfileStore((s) => s.partnerProfile);
   const pairedSince = useProfileStore((s) => s.pairedSince);
   const phone = useAuthStore((s) => s.user?.phone);
-  const { vibrate, setVibrate, quietStart, quietEnd, setQuietHours } = usePreferences();
-
-  const quietOn = quietStart !== null && quietEnd !== null;
-
-  const handleSignOut = async () => {
-    // Clear the push token first — once signed out, RLS blocks the write and
-    // this device would keep receiving pings meant for the next user.
-    if (ownProfile?.id) await clearPushToken(ownProfile.id);
-    await supabase.auth.signOut();
-  };
+  const { vibrate, setVibrate } = usePreferences();
 
   const since = pairedSince
     ? new Date(pairedSince).toLocaleDateString(undefined, { day: 'numeric', month: 'long' })
@@ -121,7 +106,7 @@ export default function SettingsScreen() {
       {/* People */}
       <View className="bg-imm-surface" style={[CARD, { padding: 20, gap: 18 }]}>
         <View className="flex-row items-center" style={{ gap: 14 }}>
-          {/* You are warm; she is cool. The same coding as the thread. */}
+          {/* You are warm; they are cool. The same coding as the thread. */}
           <LinearGradient
             colors={[...gradients.warmOrb]}
             locations={[...gradients.warmOrbStops]}
@@ -163,37 +148,16 @@ export default function SettingsScreen() {
 
       {/* Preferences */}
       <View className="bg-imm-surface" style={[CARD, { paddingHorizontal: 20, paddingVertical: 6 }]}>
+        {/* Quiet hours and "keep photo moments" are deliberately absent: the
+            first needs server-side push gating to mean anything, the second was
+            never built. Only settings that actually do something live here. */}
         <PreferenceRow label="Vibrate on arrival">
           <Toggle value={vibrate} onChange={setVibrate} label="Vibrate on arrival" />
-        </PreferenceRow>
-        <View style={HAIRLINE} />
-        <PreferenceRow label="Quiet hours">
-          <View className="flex-row items-center" style={{ gap: 12 }}>
-            {quietOn ? (
-              <Text className="font-nunito text-imm-muted" style={{ fontSize: 15 }}>
-                {formatMinutes(quietStart)} – {formatMinutes(quietEnd)}
-              </Text>
-            ) : null}
-            <Toggle
-              value={quietOn}
-              onChange={(next) =>
-                void setQuietHours(
-                  next ? DEFAULT_QUIET[0] : null,
-                  next ? DEFAULT_QUIET[1] : null
-                )
-              }
-              label="Quiet hours"
-            />
-          </View>
         </PreferenceRow>
       </View>
 
       <View style={{ alignItems: 'center', paddingTop: 4 }}>
-        <Pressable onPress={handleSignOut} hitSlop={8} style={{ paddingVertical: 10 }}>
-          <Text className="font-nunito" style={{ fontSize: 14, color: colors.muted }}>
-            Sign out
-          </Text>
-        </Pressable>
+        <SignOutLink />
         <UnpairInitiator />
       </View>
     </ScrollView>

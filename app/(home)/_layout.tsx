@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router';
 import { usePingRealtime } from '@/hooks/usePingRealtime';
+import { usePairRealtime } from '@/hooks/usePairRealtime';
 import { usePartnerProfile } from '@/hooks/usePartnerProfile';
 import { usePushRegistration } from '@/hooks/usePushRegistration';
 import { usePingFeedback } from '@/hooks/usePingFeedback';
@@ -12,6 +13,7 @@ function HomeProviders() {
   // src/lib/pingQueue.ts, started once from the root layout.
   usePartnerProfile();
   usePingRealtime();
+  usePairRealtime();
   usePushRegistration();
   usePingFeedback();
 

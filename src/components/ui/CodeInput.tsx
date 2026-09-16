@@ -1,6 +1,7 @@
 import { useImperativeHandle, useRef, useState, type Ref } from 'react';
 import { View, TextInput } from 'react-native';
 import { colors } from '@/constants/colors';
+import { shadows } from '@/constants/shadows';
 
 const CODE_LENGTH = 6;
 
@@ -101,11 +102,7 @@ export function CodeInput({ onComplete, mode = 'alphanumeric', ref }: CodeInputP
               fontFamily: 'Nunito_600SemiBold',
               fontSize: 24,
               color: colors.text,
-              shadowColor: colors.heat,
-              shadowOffset: { width: 0, height: 3 },
-              shadowOpacity: active ? 0.14 : 0,
-              shadowRadius: 14,
-              elevation: active ? 2 : 0,
+              boxShadow: active ? shadows.inputActive : undefined,
             }}
           />
         );

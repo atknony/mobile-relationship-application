@@ -1,14 +1,12 @@
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { useAuthStore } from '@/stores/authStore';
 import { useProfileStore } from '@/stores/profileStore';
 import type { Profile } from '@/types/database';
 
 export function usePartnerProfile() {
   // partner_id is the partner's user_id — query their profile directly
   const partnerId = useProfileStore((s) => s.ownProfile?.partner_id);
-  const isDemo = useAuthStore((s) => s.isDemo);
   const setPartnerProfile = useProfileStore((s) => s.setPartnerProfile);
 
   const query = useQuery({
@@ -23,7 +21,7 @@ export function usePartnerProfile() {
       if (error) throw error;
       return data as Profile;
     },
-    enabled: Boolean(partnerId) && !isDemo,
+    enabled: Boolean(partnerId),
     staleTime: 5 * 60 * 1000,
   });
 

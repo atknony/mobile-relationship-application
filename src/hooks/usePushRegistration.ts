@@ -47,12 +47,11 @@ export async function clearPushToken(userId: string) {
 
 export function usePushRegistration() {
   const userId = useAuthStore((s) => s.user?.id);
-  const isDemo = useAuthStore((s) => s.isDemo);
   const currentToken = useProfileStore((s) => s.ownProfile?.push_token);
   const setIncomingPing = usePingStore((s) => s.setIncomingPing);
 
   useEffect(() => {
-    if (!userId || isDemo) return;
+    if (!userId) return;
     let cancelled = false;
 
     void (async () => {
@@ -77,7 +76,7 @@ export function usePushRegistration() {
     return () => {
       cancelled = true;
     };
-  }, [userId, isDemo, currentToken]);
+  }, [userId, currentToken]);
 
   // Tapping a push should surface the ping, not just open the app.
   useEffect(() => {

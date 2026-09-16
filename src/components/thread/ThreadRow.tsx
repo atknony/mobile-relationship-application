@@ -1,13 +1,14 @@
 import { View, Text, Image } from 'react-native';
 import { useSignedMomentUrl } from '@/hooks/useSignedUrl';
 import { colors } from '@/constants/colors';
+import { shadows } from '@/constants/shadows';
 import type { ThreadPing } from '@/hooks/useMomentsThread';
 
 function timeLabel(ms: number) {
   return new Date(ms).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 
-/** Colour carries who sent what throughout the app: warm is you, cool is her. */
+/** Colour carries who sent what throughout the app: warm is you, cool is them. */
 function DotChip({ mine, queued }: { mine: boolean; queued?: boolean }) {
   const dot = queued ? colors.muted : mine ? colors.mine : colors.theirs;
   const bg = queued
@@ -32,15 +33,15 @@ function DotChip({ mine, queued }: { mine: boolean; queued?: boolean }) {
 }
 
 function SenderName({ mine, name }: { mine: boolean; name?: string | null }) {
-  // Her name is set in Newsreader italic, yours is plain — the typeface itself
-  // distinguishes the two people.
+  // Their name is set in Newsreader italic, yours is plain — the typeface
+  // itself distinguishes the two people.
   return mine ? (
     <Text className="font-nunito text-imm-text" style={{ fontSize: 15 }}>
       you
     </Text>
   ) : (
     <Text className="font-display text-imm-text" style={{ fontSize: 15 }}>
-      {name ?? 'her'}
+      {name ?? 'them'}
     </Text>
   );
 }
@@ -83,11 +84,7 @@ export function ThreadPingRow({
         style={{
           borderRadius: 24,
           overflow: 'hidden',
-          shadowColor: '#2D1B69',
-          shadowOffset: { width: 0, height: 6 },
-          shadowOpacity: 0.08,
-          shadowRadius: 22,
-          elevation: 3,
+          boxShadow: shadows.photo,
         }}
       >
         {photoUrl ? (

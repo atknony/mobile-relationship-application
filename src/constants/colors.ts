@@ -8,7 +8,7 @@ export const colors = {
   surfaceQuiet: '#F2ECF6',
   text: '#2D1B69',            // "ink"
   muted: '#6A5B94',
-  blue: '#74B9FF',            // her colour
+  blue: '#74B9FF',            // their colour
   blueLift: '#8FC4FF',
   coral: '#FF6B6B',
   warmHi: '#FFD9BC',
@@ -18,7 +18,7 @@ export const colors = {
   heatDeep: '#D6425F',
   emberText: '#B0566B',       // the only warm colour used for text
   white: '#FFFFFF',
-  // Semantic. Colour carries who-sent-what throughout: warm = you, cool = her.
+  // Semantic. Colour carries who-sent-what throughout: warm = you, cool = them.
   mine: '#FF7A6B',
   theirs: '#74B9FF',
   danger: '#B0566B',

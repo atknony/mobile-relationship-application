@@ -1,10 +1,20 @@
-import { useState } from 'react';
-import { View, Text, Pressable, Image, KeyboardAvoidingView, Platform } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  Pressable,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  type TextInput as RNTextInput,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '@/lib/supabase';
+import { uploadJpeg } from '@/lib/uploadImage';
 import { useAuthStore } from '@/stores/authStore';
 import { useProfileStore } from '@/stores/profileStore';
+import { useAppStore } from '@/stores/appStore';
 import { Button } from '@/components/ui/Button';
 import { TextInput } from '@/components/ui/TextInput';
 import { CameraGlyph } from '@/components/ui/CameraGlyph';
@@ -19,6 +29,14 @@ export default function ProfileSetupScreen() {
   const setOwnProfile = useProfileStore((s) => s.setOwnProfile);
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
+  const inputRef = useRef<RNTextInput>(null);
+  const isRevealed = useAppStore((s) => s.isRevealed);
+
+  // See the note in (auth)/phone.tsx — `autoFocus` opens the keyboard while the
+  // startup cover is still up, and the keyboard draws over the cover.
+  useEffect(() => {
+    if (isRevealed) inputRef.current?.focus();
+  }, [isRevealed]);
 
   const handlePickAvatar = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -43,17 +61,13 @@ export default function ProfileSetupScreen() {
     // Avatar signs it at display time.
     let avatarPath: string | undefined;
     if (avatarUri) {
-      const fileName = `${userId}/avatar.jpg`;
-      const { data: uploaded, error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, { uri: avatarUri, type: 'image/jpeg', name: 'avatar.jpg' } as unknown as File, {
+      try {
+        avatarPath = await uploadJpeg('avatars', `${userId}/avatar.jpg`, avatarUri, {
           upsert: true,
         });
-      if (uploadError) {
+      } catch {
         // A missing photo should not block getting into the app.
         showToast('Could not save your photo — carrying on without it.', 'info');
-      } else {
-        avatarPath = uploaded.path;
       }
     }
 
@@ -121,7 +135,7 @@ export default function ProfileSetupScreen() {
               onChangeText={setUsername}
               placeholder="Your name"
               maxLength={32}
-              autoFocus
+              ref={inputRef}
             />
           </View>
         </View>

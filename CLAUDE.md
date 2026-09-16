@@ -10,6 +10,18 @@ A minimalist couples app: one tap sends a "ping" (push notification + vibration)
 # .env is already filled in with Supabase credentials
 ```
 
+### Test accounts
+
+Phone OTP needs an SMS provider that is not configured yet, so in a dev build typing **`01`** or
+**`02`** on the phone screen signs in as one of two seeded accounts
+(`supabase/migrations/20260916160000_dev_test_users.sql`, mapped in `src/lib/devUsers.ts`).
+They are real `auth.users` rows signing in with email + password, so RLS, the Edge Functions,
+Realtime and pairing all behave exactly as they do for a real account — run one on each
+device/simulator to drive both sides of the pairing flow. Everything is gated on `__DEV__`.
+
+No profile rows are seeded, so each login walks onboarding → pairing. The migration's header
+comment has the SQL to wipe both accounts' profiles/pairs/moments and start over.
+
 ## Tech stack
 
 See `package.json` for the current dependency and version list.
@@ -30,17 +42,22 @@ src/
     queryClient.ts          # TanStack Query client
     notifications.ts        # expo-notifications shim (null in Expo Go on Android)
     pingQueue.ts            # SINGLE OWNER of the send path — see note below
+    uploadImage.ts          # the only correct way to put a local photo in a bucket
+    signOut.ts              # the single sign-out path — never navigates, see gotcha
+    devUsers.ts             # __DEV__ shortcut: "01"/"02" → the seeded test accounts
   stores/                   # Zustand stores
     authStore.ts            # session, user, sessionLoaded
     profileStore.ts         # ownProfile, partnerProfile, pairedWith, pairId
     pingStore.ts            # pingStatus, offlineQueue, incomingPing
     networkStore.ts         # isConnected (null until first NetInfo event)
+    appStore.ts             # isRevealed — startup cover is down, focus is allowed
     unpairStore.ts          # (reserved — not active, see unpair notes below)
   hooks/
     useSupabaseSession.ts   # onAuthStateChange → authStore (call once from root)
     useProfile.ts           # TanStack Query: own profile + fetches pair UUID
     usePartnerProfile.ts    # TanStack Query: partner profile (by partner_id)
     usePingRealtime.ts      # Supabase Realtime subscription on moments table
+    usePairRealtime.ts      # Supabase Realtime on the pairs row — the other side unpairing
     useSendPing.ts          # thin wrapper over lib/pingQueue.sendPing
     useNetworkStatus.ts     # reads networkStore — owns no subscription
     usePingFeedback.ts      # queue events → toast/haptics + ping status reset
@@ -52,7 +69,9 @@ src/
     useInviteCode.ts        # generate-invite-code + redeem-invite-code Edge Functions
     useUnpairFlow.ts        # dissolve-pair Edge Function (simplified single-step)
   components/
-    ui/                     # Button, TextInput, Avatar, LoadingSpinner, Toast
+    ui/                     # Button, TextInput, Avatar, LoadingSpinner, Toast,
+                            #   BackButton (in-group back, with a fallback),
+                            #   SignOutLink (the only way out of a guarded group)
     ping/                   # PingButton, PingRipple, PingParticles, IncomingPingOverlay
     pair/                   # InviteCodeDisplay, InviteCodeInput
     unpair/                 # UnpairInitiator, UnpairPendingBanner (banner is stub)
@@ -61,6 +80,8 @@ src/
     ping.ts                 # QueuedPing, IncomingPing, PingStatus
   constants/
     colors.ts               # Design tokens (mirror of tailwind.config.js)
+    shadows.ts              # boxShadow tokens — the only source of depth
+    vessel.ts               # Tuned constants for the send interaction
     timing.ts               # Animation constants (CHARGE_DURATION_MS, spring configs)
     hapticPatterns.ts       # Haptic style mappings
 
@@ -78,16 +99,35 @@ supabase/
 All custom tokens are in `tailwind.config.js` under `theme.extend.colors.imm` and `fontFamily`,
 mirrored in `src/constants/colors.ts` for Reanimated/SVG/StyleSheet contexts. Keep the two in sync.
 
-Two rules the tokens do not enforce:
-- **Warm is you, cool is her.** Colour is the carrier of who-sent-what everywhere.
+Three rules the tokens do not enforce:
+- **Warm is you, cool is your partner.** Colour is the carrier of who-sent-what everywhere.
+  All user-facing copy is gender-neutral — "your partner", "they/them"; the app never asks.
 - **`font-display` (Newsreader italic) is for names and headlines only** — never labels,
   values, buttons or numbers.
+- **Depth comes from `boxShadow` in `src/constants/shadows.ts`, never Android `elevation`**
+  or the `shadowColor`/`shadowOpacity`/`shadowRadius` triple — see the gotcha below.
 
 ## 3-state auth guard
 
 `app/_layout.tsx` moves the user between `(auth)`/`(onboarding)`/`(pair)`/`(home)` groups from a
 `useEffect` (not `<Redirect>`) — see the comment above `RootNavigator` for why. `pairedWith` is set
 from `profile.partner_id` (the partner's user_id); it is non-null only when the user has an active pair.
+
+**`ready` is not the same as "showing the right screen".** `ready` only means the answer is known;
+the navigator is still on the route the app booted into (expo-router resolves `/` to `(home)/index`
+before anything is decided) until `replace()` lands a render later. So the splash and the cover are
+gated on `settled` — `ready` *and* the router already on the resolved group. Hiding on `ready`
+uncovers the navigator one render early, which is the startup flash. The `<Slot />` stays mounted
+throughout and is covered rather than withheld, because expo-router throws if the root layout's
+first render has no navigator. `STARTUP_SETTLE_TIMEOUT_MS` reveals the app anyway if settling never
+happens — a flash is recoverable, a splash that never lifts is not.
+
+**The cover hides the screen, not the device.** A screen the guard is about to replace still
+mounts, runs its effects and can take focus, and a keyboard is a system window that draws
+*over* the cover — so `autoFocus` at launch produced a keyboard with no visible screen behind
+it. Nothing may take focus before `appStore.isRevealed`: `(auth)/phone` and
+`(onboarding)/profile-setup` focus from an effect keyed on it rather than using `autoFocus`,
+which fires on mount and cannot be deferred. Any new autofocusing field needs the same.
 
 ## Supabase schema
 
@@ -105,6 +145,10 @@ from `profile.partner_id` (the partner's user_id); it is non-null only when the 
 | quiet_hours_end | smallint | nullable |
 | created_at | timestamptz | |
 
+Quiet hours has **no UI**: the switch only ever gated the local notification, so a push that
+arrived while the app was closed came through anyway. The columns stay for when `send-ping`
+gates on them server-side. "Keep photo moments" is in the handoff and was never built.
+
 **`pairs`**
 | Column | Type | Notes |
 |---|---|---|
@@ -113,7 +157,7 @@ from `profile.partner_id` (the partner's user_id); it is non-null only when the 
 | receiver_id | uuid | nullable — filled on redeem |
 | invite_code | text | nullable unique — cleared on activation |
 | expires_at | timestamptz | pending invites expire 15 min after creation |
-| status | text | 'pending' / 'active' / 'dissolved' |
+| status | text | 'pending' / 'active' / 'rejected' / 'dissolved' |
 | created_at | timestamptz | |
 
 **`moments`** (the ping events)
@@ -147,8 +191,15 @@ database stores a **path**, never a URL, and a signed URL is never persisted.
 All Edge Functions use `service_role` key and bypass RLS.
 
 ### RLS policies
-RLS is enabled on all tables. Policies:
-- `profiles`: own user can read/write own row; can read partner's row (via partner_id lookup)
+RLS is enabled on all tables. **RLS is not a grant**: `authenticated` needs
+`select/insert/update` on `profiles` and `select` on `pairs`/`moments`, and `service_role`
+needs full DML — BYPASSRLS skips policies, not GRANTs. Both were missing until
+`20260916160300`, which made every query fail before its policy was consulted.
+
+Policies:
+- `profiles`: own user can read/write own row; can read the row that names them as its
+  partner (`partner_id = auth.uid()`). **Never write a `profiles` policy that selects from
+  `profiles`** — that is 42P17, infinite recursion, and it takes the whole app down.
 - `pairs`: members (requester_id or receiver_id) can read their own pair
 - `moments`: members of the active pair can read moments for that pair
 - Writes to `moments` and `pairs` go through Edge Functions only
@@ -206,6 +257,12 @@ Only `sendPing` writes `pingStatus`. Drains report through `subscribeToPingQueue
 events, which `usePingFeedback` turns into toasts/haptics — this is what keeps a
 background drain from overwriting an in-flight send's status.
 
+`usePingFeedback` also invalidates the `moments` query on `sent` and `drained`. An online
+send never touches the offline queue, so nothing else told the thread it had happened: the
+query is stale-for-30s and was only ever invalidated by a ping *arriving*, which meant your
+own pings showed up only once your partner sent one. Any new path that delivers a ping has
+to emit one of those events or the thread will silently go stale again.
+
 ## Critical gotchas
 
 - **Push notifications require a development build.** Expo Go has not supported remote
@@ -221,6 +278,63 @@ background drain from overwriting an in-flight send's status.
 - **Invite redemption must stay a single conditional UPDATE.** Splitting it back into
   select-then-update reopens the race where two people redeem the same code.
 
+- **Realtime needs the table in the publication.** `moments` was not in `supabase_realtime`,
+  so `usePingRealtime` subscribed, reported SUBSCRIBED and received nothing — the in-app
+  ping path was dead end to end. `20260916160200` adds it plus `replica identity full`, and
+  `20260916170000` does the same for `pairs`. Measured delivery is ~100-300ms once the Edge
+  Function is warm; a cold `send-ping` adds several seconds on the first call.
+- **Both sides of an unpair have to be told.** `dissolve-pair` runs entirely server-side, so
+  the device that did not initiate it learned nothing — its profile query is 5 minutes stale
+  and only polls while *unpaired*. `usePairRealtime` watches the `pairs` row and clears the
+  stores locally; the guard does the rest. It bails when `pairedWith` is already null, which
+  is what stops the initiator toasting at itself over its own event.
+- **A dissolved pair must not block re-pairing.** `pairs` had a plain
+  UNIQUE (requester_id, receiver_id); after unpairing, redeeming a fresh code from the same
+  person violated it and surfaced as "Could not complete pairing". It is now a partial unique
+  index over `status <> 'dissolved'` (`20260916160400`).
+- **`profiles.username` is not unique** (`20260916160500`). It is a per-couple display name;
+  a global UNIQUE meant the second "Alex" in the database could not finish onboarding.
+- **Never hand supabase-js the React Native `{ uri, type, name }` upload shape.** It only
+  builds a multipart body for a `Blob` or a `FormData`; anything else goes to fetch as-is,
+  and that object was serialised to JSON — the bucket stored ~250 bytes of
+  `text/plain;charset=UTF-8` describing the file, the upload returned 200 with a valid
+  `data.path`, the row looked right and every `<Image>` silently failed to decode. Upload
+  through `src/lib/uploadImage.ts`, which reads `new File(uri).bytes()` and passes an
+  explicit `contentType` (the supabase-js default is text/plain). `expo-file-system`'s
+  `File` implements Blob structurally but is not `instanceof Blob`, so it takes the same
+  wrong branch — read the bytes.
+- **Nothing pushes pair activation to the person who generated the code.** Their own
+  `profiles` row is changed server-side by `redeem-invite-code`, and `profiles` is not in the
+  Realtime publication. `useProfile` polls every 3s while `ownProfile` exists with no
+  `partner_id`, and stops the moment it lands. That poll used to live in `WaitingForPartner`,
+  which only mounts after Copy or Share is tapped — read the code out loud and that device
+  never redirected. Keep it on the query, not in a component.
+- **`getSession()` and `onAuthStateChange` both answer the initial question.** They used to race,
+  and whichever landed first set `sessionLoaded` — so an `INITIAL_SESSION` of null arriving before
+  the SecureStore read had finished declared the startup resolved-and-signed-out, sent an already
+  signed-in user to `(auth)`, and ran the whole sign-out teardown (queue purge, query-cache clear)
+  on a cold start. `useSupabaseSession` now subscribes only *after* `getSession()` settles, so
+  there is exactly one source for the initial answer and the listener only reports later changes.
+- **A pushed screen still needs a `fallback`.** `BackButton` uses `router.back()` when
+  there is history and `replace`s a route in the *same* group when there is not — a screen
+  the guard reached by `replace` has an empty stack, where `back()` is a button that does
+  nothing. Crossing groups is never a back button's job; see the next gotcha.
+- **Never navigate across auth groups by hand.** The guard owns which group you are in, so
+  a `router.push('/(auth)/phone')` from `(pair)` is replaced on the very next render — the
+  session and profile still say PAIR. That is why the invite screen offers *sign out* rather
+  than *back*: dropping the session is the only thing that changes the guard's answer.
+  `src/lib/signOut.ts` deliberately does not navigate, and falls back to a local sign-out so
+  a failed network call cannot strand someone on a screen with no way out.
+- **Never use Android `elevation`.** Every translucent white surface on the ping screen
+  carried `elevation` alongside the iOS `shadow*` props, and Android painted the outline
+  shadow as a hard, faceted copy of the shape *inside* the control — the white octagon in
+  the header circles, the camera button and the vessel. All of it now goes through
+  `boxShadow` (RN 0.76+, same on both platforms), tokenised in `src/constants/shadows.ts`
+  straight from the handoff's CSS values. Don't reintroduce either older mechanism.
+- **Android clips the last glyph of a button label** when the text node is measured with the
+  fallback face before the custom font swaps in — this is why "Continue" rendered as
+  "Continu". `Button` sets `flexShrink: 0` + `includeFontPadding: false` on its label; any
+  new text inside a fixed-height pill needs the same.
 - **`react-native-worklets/plugin` must be the last plugin in `babel.config.js`** — moving it breaks the Reanimated worklet system silently. Reanimated 4 moved the Babel plugin into `react-native-worklets` (a required peer dep); the old `react-native-reanimated/plugin` path only works as a shim and fails bundling if `react-native-worklets` is not installed.
 - **`expo-file-system` (v19+, SDK 54+) has a new API.** The old `FileSystem.documentDirectory` / `copyAsync` / `makeDirectoryAsync` are removed from the main entry. Use `expo-file-system/legacy` imports where the legacy path-string API is needed (`src/lib/pingQueue.ts`). The `./legacy` export still exists in SDK 57.
 - **NativeWind v4 requires Tailwind CSS v3**, not v4. The project pins `tailwindcss@^3.4.x` in `devDependencies`.

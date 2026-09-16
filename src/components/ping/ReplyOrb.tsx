@@ -4,6 +4,7 @@ import { GestureDetector } from 'react-native-gesture-handler';
 import { LinearGradient } from 'expo-linear-gradient';
 import { usePingAnimation } from '@/hooks/usePingAnimation';
 import { gradients } from '@/constants/colors';
+import { shadows } from '@/constants/shadows';
 import { SURGE_SPAN, VESSEL_COMPRESS, VESSEL_SURGE_SWELL } from '@/constants/vessel';
 
 const ORB = 58;
@@ -64,11 +65,7 @@ export function ReplyOrb({ onSend }: { onSend: () => void }) {
                 height: ORB,
                 borderRadius: ORB / 2,
                 overflow: 'hidden',
-                shadowColor: '#F2647A',
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.3,
-                shadowRadius: 20,
-                elevation: 6,
+                boxShadow: shadows.warm,
               },
             ]}
           >

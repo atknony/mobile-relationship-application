@@ -8,13 +8,12 @@ import type { Moment } from '@/types/database';
 // Call from (home)/_layout.tsx so the subscription is active for all paired screens.
 export function usePingRealtime() {
   const ownUserId = useAuthStore((s) => s.user?.id);
-  const isDemo = useAuthStore((s) => s.isDemo);
   const pairId = useProfileStore((s) => s.pairId); // UUID from pairs table
   const partnerProfile = useProfileStore((s) => s.partnerProfile);
   const setIncomingPing = usePingStore((s) => s.setIncomingPing);
 
   useEffect(() => {
-    if (!pairId || !ownUserId || isDemo) return;
+    if (!pairId || !ownUserId) return;
 
     const channel = supabase
       .channel(`pair-events:${pairId}`)
@@ -43,5 +42,5 @@ export function usePingRealtime() {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [pairId, ownUserId, partnerProfile?.username, isDemo]);
+  }, [pairId, ownUserId, partnerProfile?.username]);
 }

@@ -20,6 +20,16 @@ jest.mock('expo-file-system/legacy', () => ({
   deleteAsync: jest.fn(async () => {}),
 }));
 
+const mockBytes = jest.fn();
+
+jest.mock('expo-file-system', () => ({
+  File: class {
+    bytes() {
+      return mockBytes();
+    }
+  },
+}));
+
 jest.mock('@/lib/supabase', () => ({
   supabase: {
     functions: { invoke: (...args: unknown[]) => mockInvoke(...args) },
@@ -37,7 +47,7 @@ async function loadQueue(): Promise<{ queue: PingQueue; store: PingStore }> {
     const queue = require('@/lib/pingQueue') as PingQueue;
     const store = require('@/stores/pingStore') as PingStore;
     const auth = require('@/stores/authStore') as typeof import('@/stores/authStore');
-    auth.useAuthStore.setState({ user: { id: USER_ID } as never, isDemo: false });
+    auth.useAuthStore.setState({ user: { id: USER_ID } as never });
     modules = { queue, store };
   });
   return modules!;
@@ -56,6 +66,7 @@ function queuedPing(overrides: Partial<QueuedPing> = {}): QueuedPing {
 beforeEach(async () => {
   mockInvoke.mockReset().mockResolvedValue({ error: null });
   mockUpload.mockReset().mockResolvedValue({ data: { path: 'p.jpg' }, error: null });
+  mockBytes.mockReset().mockResolvedValue(new Uint8Array([0xff, 0xd8, 0xff, 0xe0]));
   await AsyncStorage.clear();
 });
 
@@ -158,6 +169,33 @@ describe('draining', () => {
 });
 
 describe('sending', () => {
+  it('uploads the photo as bytes, not as a description of the file', async () => {
+    const { queue } = await loadQueue();
+    await queue.drainQueue('boot'); // clear anything rehydrated
+    await queue.sendPing({ momentUri: 'file:///tmp/photo.jpg' });
+
+    const [path, body, options] = mockUpload.mock.calls[0];
+    expect(path).toMatch(new RegExp(`^${USER_ID}/.+\\.jpg$`));
+    // Handing supabase-js the React Native {uri, type, name} shape uploaded a
+    // few hundred bytes of text that the server stored as text/plain, so every
+    // <Image> pointed at something it could never decode.
+    expect(ArrayBuffer.isView(body)).toBe(true);
+    expect(options).toMatchObject({ contentType: 'image/jpeg' });
+  });
+
+  it('announces a delivered send so the thread can refresh itself', async () => {
+    const { queue } = await loadQueue();
+    const events: string[] = [];
+    queue.subscribeToPingQueue((e) => events.push(e.type));
+
+    await queue.sendPing();
+
+    // An online send bypasses the offline queue entirely, so this event is the
+    // only signal the thread ever gets that your own ping exists. Without it
+    // the thread only refreshed when the *partner* sent something.
+    expect(events).toContain('sent');
+  });
+
   it('reports failure rather than hanging when the photo copy fails', async () => {
     const fs = require('expo-file-system/legacy');
     (fs.copyAsync as jest.Mock).mockRejectedValueOnce(new Error('no space'));

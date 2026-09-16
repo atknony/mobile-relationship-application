@@ -12,6 +12,7 @@ import { PingButton } from '@/components/ping/PingButton';
 import { PartnerPulse } from '@/components/ping/PartnerPulse';
 import { CameraGlyph } from '@/components/ui/CameraGlyph';
 import { colors } from '@/constants/colors';
+import { shadows } from '@/constants/shadows';
 
 const HEADER_CIRCLE = {
   width: 38,
@@ -20,11 +21,7 @@ const HEADER_CIRCLE = {
   backgroundColor: 'rgba(255,255,255,0.72)',
   alignItems: 'center',
   justifyContent: 'center',
-  shadowColor: '#2D1B69',
-  shadowOffset: { width: 0, height: 1 },
-  shadowOpacity: 0.08,
-  shadowRadius: 4,
-  elevation: 1,
+  boxShadow: shadows.headerCircle,
 } as const;
 
 /**
@@ -182,11 +179,7 @@ export default function HomeScreen() {
               backgroundColor: 'rgba(255,255,255,0.66)',
               alignItems: 'center',
               justifyContent: 'center',
-              shadowColor: '#2D1B69',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.08,
-              shadowRadius: 10,
-              elevation: 2,
+              boxShadow: shadows.floatButton,
             }}
           >
             <CameraGlyph />

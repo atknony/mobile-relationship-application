@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type Ref } from 'react';
 import {
   TextInput as RNTextInput,
   View,
@@ -6,13 +6,16 @@ import {
   type TextInputProps,
 } from 'react-native';
 import { colors } from '@/constants/colors';
+import { shadows } from '@/constants/shadows';
 
 interface Props extends Omit<TextInputProps, 'style'> {
   label?: string;
   error?: string;
+  /** For focusing the field yourself — `autoFocus` fires too early at launch. */
+  ref?: Ref<RNTextInput>;
 }
 
-export function TextInput({ label, error, ...props }: Props) {
+export function TextInput({ label, error, ref, ...props }: Props) {
   const [focused, setFocused] = useState(false);
 
   return (
@@ -32,6 +35,7 @@ export function TextInput({ label, error, ...props }: Props) {
       ) : null}
 
       <RNTextInput
+        ref={ref}
         {...props}
         onFocus={(e) => {
           setFocused(true);
@@ -56,11 +60,7 @@ export function TextInput({ label, error, ...props }: Props) {
           fontFamily: 'Nunito_400Regular',
           fontSize: 17,
           color: colors.text,
-          shadowColor: '#2D1B69',
-          shadowOffset: { width: 0, height: 3 },
-          shadowOpacity: 0.05,
-          shadowRadius: 14,
-          elevation: 1,
+          boxShadow: shadows.input,
         }}
       />
 
