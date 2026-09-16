@@ -22,12 +22,14 @@ export function usePingFeedback() {
       subscribeToPingQueue((event) => {
         switch (event.type) {
           case 'sendFailed':
+            // The send screen is wordless: a failed ping is felt, then shown as
+            // a queued row in the thread rather than as a banner over the vessel.
             errorHaptic();
-            showToast("Couldn't send — we'll keep trying.", 'error');
             break;
           case 'dropped':
-            // Previously these were discarded in silence, after the UI had
-            // already told the user the ping was sent.
+            // A ping the queue gave up on leaves the thread entirely, so this is
+            // the only notice it gets. Previously it was discarded in silence,
+            // after the UI had already claimed it was sent.
             errorHaptic();
             showToast(
               event.count === 1
@@ -37,12 +39,7 @@ export function usePingFeedback() {
             );
             break;
           case 'drained':
-            showToast(
-              event.delivered === 1
-                ? 'Queued ping sent 💙'
-                : `${event.delivered} queued pings sent 💙`,
-              'success'
-            );
+            // Success is visible in the thread; nothing to announce.
             break;
         }
       }),

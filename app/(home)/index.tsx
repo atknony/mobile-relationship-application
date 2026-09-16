@@ -13,6 +13,20 @@ import { PartnerPulse } from '@/components/ping/PartnerPulse';
 import { CameraGlyph } from '@/components/ui/CameraGlyph';
 import { colors } from '@/constants/colors';
 
+const HEADER_CIRCLE = {
+  width: 38,
+  height: 38,
+  borderRadius: 19,
+  backgroundColor: 'rgba(255,255,255,0.72)',
+  alignItems: 'center',
+  justifyContent: 'center',
+  shadowColor: '#2D1B69',
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.08,
+  shadowRadius: 4,
+  elevation: 1,
+} as const;
+
 /**
  * The only screen that matters. Wordless by design — no status text and no
  * instructional copy, because the vessel animation is the confirmation.
@@ -99,34 +113,41 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <Pressable
-          onPress={() => router.push('/(home)/settings')}
-          hitSlop={12}
-          accessibilityLabel="Settings"
-          style={{
-            width: 38,
-            height: 38,
-            borderRadius: 19,
-            backgroundColor: 'rgba(255,255,255,0.72)',
-            alignItems: 'center',
-            justifyContent: 'center',
-            shadowColor: '#2D1B69',
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.08,
-            shadowRadius: 4,
-            elevation: 1,
-          }}
-        >
-          <View
-            style={{
-              width: 13,
-              height: 13,
-              borderRadius: 6.5,
-              borderWidth: 1.5,
-              borderColor: colors.muted,
-            }}
-          />
-        </Pressable>
+        <View className="flex-row items-center" style={{ gap: 8 }}>
+          <Pressable
+            onPress={() => router.push('/(home)/thread')}
+            hitSlop={12}
+            accessibilityLabel="Ping history"
+            style={HEADER_CIRCLE}
+          >
+            {/* Three stacked bars */}
+            <View style={{ gap: 3, alignItems: 'flex-start' }}>
+              {[14, 14, 9].map((width, i) => (
+                <View
+                  key={i}
+                  style={{ width, height: 1.5, borderRadius: 2, backgroundColor: colors.muted }}
+                />
+              ))}
+            </View>
+          </Pressable>
+
+          <Pressable
+            onPress={() => router.push('/(home)/settings')}
+            hitSlop={12}
+            accessibilityLabel="Settings"
+            style={HEADER_CIRCLE}
+          >
+            <View
+              style={{
+                width: 13,
+                height: 13,
+                borderRadius: 6.5,
+                borderWidth: 1.5,
+                borderColor: colors.muted,
+              }}
+            />
+          </Pressable>
+        </View>
       </View>
 
       {/* The vessel */}
