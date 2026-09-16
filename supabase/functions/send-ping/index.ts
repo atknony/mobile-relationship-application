@@ -98,11 +98,18 @@ Deno.serve(async (req) => {
         pair_id: pair.id,
         sender_id: user.id,
         photo_path: photoPath ?? null,
+        client_id: localId ?? null,
       })
       .select('id')
       .single();
 
     if (insertError) {
+      // 23505: this localId was already delivered — the client is retrying a
+      // send whose response it never received. Report success so it stops,
+      // and do not push again.
+      if (insertError.code === '23505') {
+        return json({ ok: true, localId, duplicate: true });
+      }
       console.error('insert error', insertError);
       return json({ error: 'Could not send ping' }, 500);
     }

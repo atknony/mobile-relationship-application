@@ -21,6 +21,7 @@ export type Moment = {
   id: string;
   pair_id: string;            // FK → pairs table
   sender_id: string;
+  client_id: string | null;   // client-generated localId — idempotency key for retries
   photo_path: string | null;  // Storage object path — sign at read time, never a URL
   viewed_at: string | null;
   created_at: string;
