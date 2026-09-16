@@ -8,6 +8,8 @@ import type * as ExpoNotifications from 'expo-notifications';
  */
 export const Notifications: typeof ExpoNotifications | null = (() => {
   try {
+    // A static import cannot be caught — require() is the point of this shim.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require('expo-notifications');
   } catch {
     return null;

@@ -2,6 +2,7 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    "types": ["jest"],
     "paths": {
       "@/*": [
         "./src/*"
@@ -10,6 +11,11 @@
   },
   "exclude": [
     "node_modules",
+    "babel.config.js",
+    "metro.config.js",
+    "jest.config.js",
+    "jest-setup.js",
+    "eslint.config.js",
     "supabase/functions"
   ]
 }

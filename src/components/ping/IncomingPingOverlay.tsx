@@ -1,12 +1,13 @@
+import { useEffect } from 'react';
 import { Modal, View, Text, Pressable, Image } from 'react-native';
 import { BlurView } from 'expo-blur';
 import Animated, {
+  cancelAnimation,
   useSharedValue,
   useAnimatedStyle,
   withRepeat,
   withSequence,
   withSpring,
-  withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useIncomingPing } from '@/hooks/useIncomingPing';
@@ -18,23 +19,20 @@ import { SPRING_BOUNCE } from '@/constants/timing';
 function HeartBeat() {
   const scale = useSharedValue(1);
 
-  const start = () => {
-    scale.value = withRepeat(
-      withSequence(
-        withSpring(1.3, SPRING_BOUNCE),
-        withSpring(1, SPRING_BOUNCE)
-      ),
-      -1,
-      false
-    );
-  };
-
   const style = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
 
-  // Start on first render
-  start();
+  // In an effect, not the render body: starting an infinite animation during
+  // render restarted it on every re-render and leaked the previous one.
+  useEffect(() => {
+    scale.value = withRepeat(
+      withSequence(withSpring(1.3, SPRING_BOUNCE), withSpring(1, SPRING_BOUNCE)),
+      -1,
+      false
+    );
+    return () => cancelAnimation(scale);
+  }, [scale]);
 
   return (
     <Animated.Text style={style} className="text-5xl">

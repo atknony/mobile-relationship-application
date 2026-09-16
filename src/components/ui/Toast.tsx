@@ -1,11 +1,10 @@
-import { createContext, useCallback, useContext, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { View, Text } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
   withDelay,
-  runOnJS,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TOAST_AUTODISMISS_MS } from '@/constants/timing';
@@ -44,18 +43,15 @@ function ToastItem({ message, variant }: { message: string; variant: ToastVarian
     transform: [{ translateY: translateY.value }],
   }));
 
-  const show = useCallback(() => {
+  // An effect, not `useState(initializer)`: that ran the animation during
+  // render and could fire twice under StrictMode/concurrent rendering.
+  useEffect(() => {
     translateY.value = withTiming(0, { duration: 300 });
     translateY.value = withDelay(
       TOAST_AUTODISMISS_MS,
       withTiming(-80, { duration: 300 })
     );
-  }, []);
-
-  // Trigger animation after mount
-  useState(() => {
-    show();
-  });
+  }, [translateY]);
 
   return (
     <Animated.View

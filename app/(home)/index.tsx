@@ -15,7 +15,6 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const partnerProfile = useProfileStore((s) => s.partnerProfile);
-  const ownProfile = useProfileStore((s) => s.ownProfile);
   const pingStatus = usePingStore((s) => s.pingStatus);
   const offlineQueue = usePingStore((s) => s.offlineQueue);
   const { isConnected } = useNetworkStatus();
