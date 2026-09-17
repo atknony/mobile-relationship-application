@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { View, Text } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -35,6 +36,11 @@ export function Avatar({ uri, localUri, name, size = 56, tone = 'cool' }: Avatar
   const source = localUri ?? cached.uri;
   const instant = Boolean(localUri) || cached.cachedAtMount;
   const hasPhoto = Boolean(localUri || uri);
+  // The photo this avatar opened with. Only that one appears without a
+  // transition; a later change (the partner picking a new photo while this is
+  // on screen) cross-fades from the old photo instead of snapping.
+  const [openedWith] = useState(source);
+  const transition = instant && source === openedWith ? null : FADE_IN_MS;
 
   return (
     <View
@@ -84,7 +90,7 @@ export function Avatar({ uri, localUri, name, size = 56, tone = 'cool' }: Avatar
           contentFit="cover"
           // The file is already on disk; keeping a second copy there would be waste.
           cachePolicy="memory"
-          transition={instant ? null : FADE_IN_MS}
+          transition={transition}
           onError={localUri ? undefined : cached.onDecodeError}
         />
       ) : null}

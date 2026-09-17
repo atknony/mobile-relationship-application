@@ -7,7 +7,8 @@ import { usePingStore } from '@/stores/pingStore';
 import type { Pair } from '@/types/database';
 
 /**
- * Watches the pair row for the other person ending it.
+ * Watches the pair row for the other person ending it — and, while the pair is
+ * active, for the partner changing their profile (see the handler).
  *
  * `dissolve-pair` does everything server-side: it flips `pairs.status` to
  * 'dissolved' and nulls `partner_id` on both profiles. The initiator's app
@@ -45,7 +46,18 @@ export function usePairRealtime() {
         },
         (payload) => {
           const row = payload.new as Pair;
-          if (row.status === 'active') return;
+
+          if (row.status === 'active') {
+            // The partner changed their photo or name. `profiles` is not in
+            // Realtime (its events would carry push_token), so a trigger stamps
+            // this row instead and we refetch the one profile ourselves. Our
+            // own edits stamp it too; those need nothing.
+            const partnerId = useProfileStore.getState().partnerProfile?.id;
+            if (row.profile_changed_by && row.profile_changed_by === partnerId) {
+              void queryClient.invalidateQueries({ queryKey: ['partner-profile', partnerId] });
+            }
+            return;
+          }
 
           // Write the stores directly rather than waiting on a refetch. The
           // root guard reads `pairedWith`, derived from `ownProfile.partner_id`

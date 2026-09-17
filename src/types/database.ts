@@ -37,6 +37,10 @@ export type Pair = {
   expires_at: string | null;  // pending invites expire
   status: string;             // 'pending' | 'active' | 'dissolved'
   created_at: string;
+  // Stamped by a trigger when either member's avatar or username changes — the
+  // partner's Realtime cue to refetch that profile (20260917160000).
+  profile_changed_at: string | null;
+  profile_changed_by: string | null;
 };
 
 export interface Database {

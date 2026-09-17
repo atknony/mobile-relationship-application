@@ -47,6 +47,7 @@ src/
     pingQueue.ts            # SINGLE OWNER of the send path — see note below
     uploadImage.ts          # the only correct way to put a local photo in a bucket
     avatar.ts               # pick / change profile photo — fresh path, cache + store sync
+    preloadImage.ts         # download + decode a photo before it is shown (with a timeout)
     activeDevice.ts         # one account, one phone: claim on sign-in, detect replacement
     signOut.ts              # the single sign-out path — never navigates, see gotcha
     devUsers.ts             # __DEV__ shortcut: "01"/"02" → the seeded test accounts
@@ -174,6 +175,8 @@ gates on them server-side. "Keep photo moments" is in the handoff and was never 
 | expires_at | timestamptz | pending invites expire 15 min after creation |
 | status | text | 'pending' / 'active' / 'rejected' / 'dissolved' |
 | created_at | timestamptz | |
+| profile_changed_at | timestamptz | nullable — trigger-stamped when a member's avatar/username changes |
+| profile_changed_by | uuid | nullable — whose profile changed; the partner refetches on it |
 
 **`moments`** (the ping events)
 | Column | Type | Notes |
@@ -212,9 +215,15 @@ overwrite an object in place** — a cached copy would never be refreshed.
   (`changeAvatar`) uploads, updates the row, writes the result to both the `['profile']`
   query cache and `profileStore`, then deletes the previous object (`20260917090000`
   added the delete policy). Older rows may still hold the legacy `avatar.jpg` path.
-  The partner's phone learns about it in `usePartnerProfile`, which refetches whenever the
-  app returns to the foreground — `profiles` is deliberately not in Realtime (it would
-  broadcast `push_token`), so a change made while both apps are open shows on the next resume.
+  **The partner's open app sees it within ~1s without `profiles` being in Realtime** (its events
+  would carry `push_token` to the partner). A trigger on `profiles` (avatar_url/username only, and
+  only on a real change) stamps the active pair's `profile_changed_at`/`profile_changed_by`
+  (`20260917160000`); `usePairRealtime` already watches that row, and when the stamp names the
+  partner it invalidates `partner-profile`. `usePartnerProfile` preloads a changed photo before
+  publishing the new row, so `Avatar` cross-fades photo-to-photo instead of dropping to initials.
+  A backgrounded app misses the event and catches up by refetching on foreground. Don't put
+  `profiles` in the publication, and don't make `push_token` writes fire the trigger — they
+  happen on every launch.
 
 ### Edge Functions (deployed)
 | Function | What it does |
