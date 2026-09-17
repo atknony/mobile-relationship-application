@@ -1,5 +1,5 @@
-import { View, Text, Image } from 'react-native';
-import { useSignedMomentUrl } from '@/hooks/useSignedUrl';
+import { View, Text } from 'react-native';
+import { MomentPhoto } from '@/components/ui/MomentPhoto';
 import { colors } from '@/constants/colors';
 import { shadows } from '@/constants/shadows';
 import type { ThreadPing } from '@/hooks/useMomentsThread';
@@ -53,8 +53,6 @@ export function ThreadPingRow({
   ping: ThreadPing;
   partnerName?: string | null;
 }) {
-  const { data: photoUrl } = useSignedMomentUrl(ping.photoPath ?? undefined);
-
   if (!ping.photoPath) {
     // A bare ping is a single line — no card.
     return (
@@ -79,20 +77,12 @@ export function ThreadPingRow({
           {ping.queued ? 'queued' : timeLabel(ping.createdAt)}
         </Text>
       </View>
-      <View
-        className="bg-imm-surface"
-        style={{
-          borderRadius: 24,
-          overflow: 'hidden',
-          boxShadow: shadows.photo,
-        }}
-      >
-        {photoUrl ? (
-          <Image source={{ uri: photoUrl }} style={{ height: 208 }} resizeMode="cover" />
-        ) : (
-          <View style={{ height: 208, backgroundColor: 'rgba(45,27,105,0.04)' }} />
-        )}
-      </View>
+      <MomentPhoto
+        path={ping.photoPath}
+        height={208}
+        borderRadius={24}
+        boxShadow={shadows.photo}
+      />
     </View>
   );
 }

@@ -1,9 +1,9 @@
-import { Modal, View, Text, Pressable, Image } from 'react-native';
+import { Modal, View, Text, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useIncomingPing } from '@/hooks/useIncomingPing';
-import { useSignedMomentUrl } from '@/hooks/useSignedUrl';
 import { useSendPing } from '@/hooks/useSendPing';
 import { Avatar } from '@/components/ui/Avatar';
+import { MomentPhoto } from '@/components/ui/MomentPhoto';
 import { ReplyOrb } from './ReplyOrb';
 import { RadialGlow } from './vessel/RadialGlow';
 import { useProfileStore } from '@/stores/profileStore';
@@ -26,8 +26,6 @@ export function IncomingPingOverlay() {
   const partnerProfile = useProfileStore((s) => s.partnerProfile);
   const insets = useSafeAreaInsets();
   const { sendPing } = useSendPing();
-  // The bucket is private: the stored path is signed on demand, never persisted.
-  const { data: momentUrl } = useSignedMomentUrl(incomingPing?.momentPath);
 
   if (!incomingPing) return null;
 
@@ -110,18 +108,17 @@ export function IncomingPingOverlay() {
             </Text>
           </View>
 
-          {momentUrl ? (
-            <View
-              className="bg-imm-surface"
-              style={{
-                width: '100%',
-                borderRadius: 26,
-                overflow: 'hidden',
-                boxShadow: shadows.cardLift,
-              }}
-            >
-              <Image source={{ uri: momentUrl }} style={{ height: 212 }} resizeMode="cover" />
-            </View>
+          {/* Keyed on the path, which arrives with the ping — not on the signed
+              URL, which arrives a round trip later and used to make the card
+              appear late and push everything above it up. */}
+          {incomingPing.momentPath ? (
+            <MomentPhoto
+              key={incomingPing.momentPath}
+              path={incomingPing.momentPath}
+              height={212}
+              borderRadius={26}
+              boxShadow={shadows.cardLift}
+            />
           ) : null}
 
           <ReplyOrb onSend={() => void sendPing()} />
