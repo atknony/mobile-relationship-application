@@ -7,11 +7,16 @@ interface ProfileState {
   pairedWith: string | null; // partner's user_id
   pairId: string | null;     // UUID from the pairs table (needed for realtime subscriptions)
   pairedSince: string | null; // pairs.created_at — "together since" in settings
+  pairActivatedAt: string | null; // pairs.activated_at — when it became a pair (celebration)
 
   setOwnProfile: (profile: Profile | null) => void;
   setPartnerProfile: (profile: Profile | null) => void;
   setPairedWith: (partnerId: string | null) => void;
-  setPairId: (pairId: string | null, pairedSince?: string | null) => void;
+  setPairId: (
+    pairId: string | null,
+    pairedSince?: string | null,
+    pairActivatedAt?: string | null
+  ) => void;
   clearProfiles: () => void;
 }
 
@@ -21,6 +26,7 @@ export const useProfileStore = create<ProfileState>((set) => ({
   pairedWith: null,
   pairId: null,
   pairedSince: null,
+  pairActivatedAt: null,
 
   setOwnProfile: (profile) =>
     set({
@@ -32,8 +38,16 @@ export const useProfileStore = create<ProfileState>((set) => ({
 
   setPairedWith: (partnerId) => set({ pairedWith: partnerId }),
 
-  setPairId: (pairId, pairedSince = null) => set({ pairId, pairedSince }),
+  setPairId: (pairId, pairedSince = null, pairActivatedAt = null) =>
+    set({ pairId, pairedSince, pairActivatedAt }),
 
   clearProfiles: () =>
-    set({ ownProfile: null, partnerProfile: null, pairedWith: null, pairId: null, pairedSince: null }),
+    set({
+      ownProfile: null,
+      partnerProfile: null,
+      pairedWith: null,
+      pairId: null,
+      pairedSince: null,
+      pairActivatedAt: null,
+    }),
 }));

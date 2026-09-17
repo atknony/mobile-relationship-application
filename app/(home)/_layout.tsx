@@ -6,6 +6,7 @@ import { usePushRegistration } from '@/hooks/usePushRegistration';
 import { usePingFeedback } from '@/hooks/usePingFeedback';
 import { usePrefetchImages } from '@/hooks/usePrefetchImages';
 import { IncomingPingOverlay } from '@/components/ping/IncomingPingOverlay';
+import { PairCelebrationOverlay } from '@/components/pair/PairCelebrationOverlay';
 import { colors } from '@/constants/colors';
 import { panel } from '@/constants/transitions';
 
@@ -37,6 +38,8 @@ export default function HomeLayout() {
         <Stack.Screen name="thread" options={panel} />
         <Stack.Screen name="settings" options={panel} />
       </Stack>
+      {/* Before the ping overlay, so a ping arriving mid-celebration opens on top. */}
+      <PairCelebrationOverlay />
       <IncomingPingOverlay />
     </>
   );

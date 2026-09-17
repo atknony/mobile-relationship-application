@@ -67,12 +67,12 @@ export function useProfile() {
     if (query.data?.partner_id && userId) {
       supabase
         .from('pairs')
-        .select('id, created_at')
+        .select('id, created_at, activated_at')
         .or(`requester_id.eq.${userId},receiver_id.eq.${userId}`)
         .eq('status', 'active')
         .maybeSingle()
-        .then(({ data }: { data: Pick<Pair, 'id' | 'created_at'> | null }) => {
-          setPairId(data?.id ?? null, data?.created_at ?? null);
+        .then(({ data }: { data: Pick<Pair, 'id' | 'created_at' | 'activated_at'> | null }) => {
+          setPairId(data?.id ?? null, data?.created_at ?? null, data?.activated_at ?? null);
         });
     } else {
       setPairId(null);

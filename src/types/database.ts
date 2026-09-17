@@ -36,7 +36,8 @@ export type Pair = {
   invite_code: string | null; // cleared on activation
   expires_at: string | null;  // pending invites expire
   status: string;             // 'pending' | 'active' | 'dissolved'
-  created_at: string;
+  created_at: string;         // when the invite was generated, not when it was redeemed
+  activated_at: string | null; // trigger-stamped when status becomes 'active' (20260917180000)
   // Stamped by a trigger when either member's avatar or username changes — the
   // partner's Realtime cue to refetch that profile (20260917160000).
   profile_changed_at: string | null;

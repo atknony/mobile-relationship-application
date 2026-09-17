@@ -65,6 +65,8 @@ src/
     usePartnerProfile.ts    # TanStack Query: partner profile (by partner_id)
     usePingRealtime.ts      # Supabase Realtime subscription on moments table
     usePairRealtime.ts      # Supabase Realtime on the pairs row — the other side unpairing
+    usePairActivation.ts    # (pair) group: the invite's creator learns it was redeemed at once
+    usePairCelebration.ts   # when to show the pairing celebration
     useSendPing.ts          # thin wrapper over lib/pingQueue.sendPing
     useNetworkStatus.ts     # reads networkStore — owns no subscription
     usePingFeedback.ts      # queue events → toast/haptics + ping status reset
@@ -82,7 +84,7 @@ src/
                             #   SignOutLink (the only way out of a guarded group),
                             #   MomentPhoto (ping photo: fixed slot, fades in on decode)
     ping/                   # PingButton, PingRipple, PingParticles, IncomingPingOverlay
-    pair/                   # InviteCodeDisplay, InviteCodeInput
+    pair/                   # InviteCodeDisplay, InviteCodeInput, PairCelebrationOverlay
     unpair/                 # UnpairInitiator, UnpairPendingBanner (banner is stub)
   types/
     database.ts             # Supabase table types (hand-written — see gotcha below)
@@ -175,6 +177,7 @@ gates on them server-side. "Keep photo moments" is in the handoff and was never 
 | expires_at | timestamptz | pending invites expire 15 min after creation |
 | status | text | 'pending' / 'active' / 'rejected' / 'dissolved' |
 | created_at | timestamptz | |
+| activated_at | timestamptz | nullable — trigger-stamped when status becomes 'active' (`created_at` is the invite's time) |
 | profile_changed_at | timestamptz | nullable — trigger-stamped when a member's avatar/username changes |
 | profile_changed_by | uuid | nullable — whose profile changed; the partner refetches on it |
 
@@ -299,6 +302,24 @@ An account is signed in on one phone at a time (`20260917120000_single_active_de
   believes "no profile" after confirming the session is alive — otherwise a replaced phone would
   be routed to onboarding. Network errors never count as revoked: being offline must not sign
   anyone out.
+
+## Pairing celebration
+
+`PairCelebrationOverlay` (mounted in `(home)/_layout.tsx`, before `IncomingPingOverlay` so a ping
+opens on top) greets both people when a pair becomes active.
+
+- **One rule on both phones** (`usePairCelebration`, `lib/pairCelebration.ts`): celebrate a pair
+  whose `activated_at` is within `PAIR_CELEBRATION_WINDOW_MS` (1h) and that this device has not
+  celebrated (AsyncStorage). Keyed on the pair, not on watching `partner_id` flip, because only an
+  open app sees that flip — the person who shared the code may have closed the app while waiting.
+- **Both arrive at the same time.** The redeemer reaches Home from the Edge Function response;
+  the code's creator used to wait on the 3s profile poll. `usePairActivation` (in `(pair)`)
+  subscribes to `pairs` UPDATEs where `requester_id` is them and refetches the profile at once,
+  plus once more ~800ms later because `redeem-invite-code` sets `partner_id` after it activates
+  the pair.
+- **It opens complete**: it waits for `isRevealed` (a Modal draws over the startup cover), the
+  partner profile, and both avatars preloaded. The pair is claimed as celebrated only right before
+  it shows — claiming first and being cancelled would lose the moment for good.
 
 ## Unpair flow
 

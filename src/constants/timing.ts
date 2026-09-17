@@ -10,6 +10,14 @@ export const INCOMING_PING_AUTODISMISS_MS = 8000;
 // anyway, with the photo's space reserved: a late photo is a flaw, a ping that
 // never arrives on a bad connection would be a failure.
 export const INCOMING_PHOTO_WAIT_MS = 3000;
+// A pair is celebrated if it became active this recently and this phone has not
+// celebrated it yet — long enough to catch someone who had the app closed at the
+// moment their partner redeemed the code, short enough that signing in on a new
+// phone next week does not throw a party for an old pair.
+export const PAIR_CELEBRATION_WINDOW_MS = 60 * 60 * 1000;
+export const PAIR_CELEBRATION_AUTODISMISS_MS = 12000;
+// How long the celebration waits for both avatars so it can open complete.
+export const PAIR_CELEBRATION_AVATAR_WAIT_MS = 1500;
 export const TOAST_AUTODISMISS_MS = 3000;
 export const OFFLINE_PING_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 export const MAX_PING_RETRIES = 3;

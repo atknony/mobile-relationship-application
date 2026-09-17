@@ -18,7 +18,13 @@ const RING = 74;
  * gesture and timing as the home vessel", so it reuses usePingAnimation and the
  * vessel's compress/swell mapping at a smaller scale. Worth a design review.
  */
-export function ReplyOrb({ onSend }: { onSend: () => void }) {
+export function ReplyOrb({
+  onSend,
+  label = 'hold to answer',
+}: {
+  onSend: () => void;
+  label?: string;
+}) {
   const { p, burst, gesture } = usePingAnimation({
     onSend,
     onEarlyRelease: () => {
@@ -80,7 +86,7 @@ export function ReplyOrb({ onSend }: { onSend: () => void }) {
         </View>
       </GestureDetector>
       <Text className="font-display text-imm-muted" style={{ fontSize: 12 }}>
-        hold to answer
+        {label}
       </Text>
     </View>
   );
