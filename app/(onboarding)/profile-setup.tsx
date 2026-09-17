@@ -9,9 +9,9 @@ import {
   type TextInput as RNTextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '@/lib/supabase';
 import { uploadJpeg } from '@/lib/uploadImage';
+import { newAvatarPath, pickAvatar } from '@/lib/avatar';
 import { useAuthStore } from '@/stores/authStore';
 import { useProfileStore } from '@/stores/profileStore';
 import { useAppStore } from '@/stores/appStore';
@@ -39,13 +39,8 @@ export default function ProfileSetupScreen() {
   }, [isRevealed]);
 
   const handlePickAvatar = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.7,
-      allowsEditing: true,
-      aspect: [1, 1],
-    });
-    if (!result.canceled && result.assets[0]) setAvatarUri(result.assets[0].uri);
+    const uri = await pickAvatar();
+    if (uri) setAvatarUri(uri);
   };
 
   const handleSave = async () => {
@@ -62,9 +57,7 @@ export default function ProfileSetupScreen() {
     let avatarPath: string | undefined;
     if (avatarUri) {
       try {
-        avatarPath = await uploadJpeg('avatars', `${userId}/avatar.jpg`, avatarUri, {
-          upsert: true,
-        });
+        avatarPath = await uploadJpeg('avatars', newAvatarPath(userId), avatarUri);
       } catch {
         // A missing photo should not block getting into the app.
         showToast('Could not save your photo — carrying on without it.', 'info');

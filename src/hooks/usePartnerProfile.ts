@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { AppState } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useProfileStore } from '@/stores/profileStore';
@@ -30,6 +31,23 @@ export function usePartnerProfile() {
       setPartnerProfile(query.data);
     }
   }, [query.data]);
+
+  // Your partner changing their name or photo happens on their phone, and
+  // nothing tells this one: `profiles` is not in the Realtime publication
+  // (adding it would broadcast push_token too), and this query is mounted once
+  // for the whole of (home), so staleTime alone never re-reads it. Coming back
+  // to the app is the natural moment to look. refetch() rather than relying on
+  // staleness, which would skip it for five minutes after the last read; when
+  // nothing changed, structural sharing keeps `data` identical and the store
+  // is not written.
+  const { refetch } = query;
+  useEffect(() => {
+    if (!partnerId) return;
+    const sub = AppState.addEventListener('change', (status) => {
+      if (status === 'active') void refetch();
+    });
+    return () => sub.remove();
+  }, [partnerId, refetch]);
 
   return query;
 }

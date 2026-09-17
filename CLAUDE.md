@@ -43,6 +43,7 @@ src/
     notifications.ts        # expo-notifications shim (null in Expo Go on Android)
     pingQueue.ts            # SINGLE OWNER of the send path — see note below
     uploadImage.ts          # the only correct way to put a local photo in a bucket
+    avatar.ts               # pick / change profile photo — fresh path, cache + store sync
     signOut.ts              # the single sign-out path — never navigates, see gotcha
     devUsers.ts             # __DEV__ shortcut: "01"/"02" → the seeded test accounts
   stores/                   # Zustand stores
@@ -177,8 +178,17 @@ owner's user id, and both are read at display time through `useSignedUrl` — th
 database stores a **path**, never a URL, and a signed URL is never persisted.
 
 - `moments` — ping photos at `<sender_user_id>/<local_id>.jpg`
-- `avatars` — profile photos at `<user_id>/avatar.jpg` (`profiles.avatar_url`
-  holds a path despite the column name; `Avatar` signs it)
+- `avatars` — profile photos at `<user_id>/avatar-<timestamp>.jpg` (`profiles.avatar_url`
+  holds a path despite the column name; `Avatar` signs it). **Every new photo gets a new
+  path — never overwrite in place.** The signed-URL query, the image cache and the partner's
+  copy of the row are all keyed on the path, and objects are served with
+  `max-age=3600`, so an overwrite keeps showing the old face. `src/lib/avatar.ts`
+  (`changeAvatar`) uploads, updates the row, writes the result to both the `['profile']`
+  query cache and `profileStore`, then deletes the previous object (`20260917090000`
+  added the delete policy). Older rows may still hold the legacy `avatar.jpg` path.
+  The partner's phone learns about it in `usePartnerProfile`, which refetches whenever the
+  app returns to the foreground — `profiles` is deliberately not in Realtime (it would
+  broadcast `push_token`), so a change made while both apps are open shows on the next resume.
 
 ### Edge Functions (deployed)
 | Function | What it does |

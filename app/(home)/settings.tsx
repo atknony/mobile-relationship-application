@@ -1,15 +1,17 @@
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { useState } from 'react';
+import { View, Text, Pressable, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { usePreferences } from '@/hooks/usePreferences';
+import { changeAvatar, pickAvatar } from '@/lib/avatar';
+import { useToast } from '@/components/ui/Toast';
 import { useProfileStore } from '@/stores/profileStore';
 import { useAuthStore } from '@/stores/authStore';
 import { Avatar } from '@/components/ui/Avatar';
 import { Toggle } from '@/components/ui/Toggle';
 import { SignOutLink } from '@/components/ui/SignOutLink';
 import { UnpairInitiator } from '@/components/unpair/UnpairInitiator';
-import { colors, gradients } from '@/constants/colors';
+import { colors } from '@/constants/colors';
 import { shadows } from '@/constants/shadows';
 
 const CARD = {
@@ -67,6 +69,30 @@ export default function SettingsScreen() {
   const pairedSince = useProfileStore((s) => s.pairedSince);
   const phone = useAuthStore((s) => s.user?.phone);
   const { vibrate, setVibrate } = usePreferences();
+  const { showToast } = useToast();
+  const [uploading, setUploading] = useState(false);
+  // The photo as picked, kept on screen after the save too: it is the same
+  // image, and swapping to the signed copy would blank the circle while it
+  // downloads.
+  const [pickedUri, setPickedUri] = useState<string | null>(null);
+
+  const handleChangePhoto = async () => {
+    if (uploading || !ownProfile) return;
+    const uri = await pickAvatar();
+    if (!uri) return;
+
+    const previousUri = pickedUri;
+    setPickedUri(uri);
+    setUploading(true);
+    try {
+      await changeAvatar(ownProfile.id, uri);
+    } catch {
+      setPickedUri(previousUri);
+      showToast('Could not save your photo. Try again.', 'error');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const since = pairedSince
     ? new Date(pairedSince).toLocaleDateString(undefined, { day: 'numeric', month: 'long' })
@@ -107,13 +133,33 @@ export default function SettingsScreen() {
       <View className="bg-imm-surface" style={[CARD, { padding: 20, gap: 18 }]}>
         <View className="flex-row items-center" style={{ gap: 14 }}>
           {/* You are warm; they are cool. The same coding as the thread. */}
-          <LinearGradient
-            colors={[...gradients.warmOrb]}
-            locations={[...gradients.warmOrbStops]}
-            start={{ x: 0.34, y: 0.28 }}
-            end={{ x: 1, y: 1 }}
-            style={{ width: 52, height: 52, borderRadius: 26 }}
-          />
+          <Pressable
+            onPress={handleChangePhoto}
+            disabled={uploading}
+            accessibilityRole="button"
+            accessibilityLabel="Change profile picture"
+          >
+            <Avatar
+              uri={ownProfile?.avatar_url}
+              localUri={pickedUri}
+              name={ownProfile?.username}
+              size={52}
+              tone="warm"
+            />
+            {uploading ? (
+              <View
+                style={{
+                  ...StyleSheet.absoluteFill,
+                  borderRadius: 26,
+                  backgroundColor: 'rgba(255,255,255,0.55)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <ActivityIndicator size="small" color={colors.heat} />
+              </View>
+            ) : null}
+          </Pressable>
           <View style={{ flex: 1 }}>
             <Text className="font-nunito-semibold text-imm-text" style={{ fontSize: 17 }}>
               {ownProfile?.username ?? ''}
@@ -123,6 +169,23 @@ export default function SettingsScreen() {
                 {phone}
               </Text>
             ) : null}
+            <Pressable
+              onPress={handleChangePhoto}
+              disabled={uploading}
+              hitSlop={8}
+              style={{ alignSelf: 'flex-start', paddingTop: 4 }}
+            >
+              <Text
+                className="font-nunito-semibold"
+                style={{ fontSize: 13, color: colors.emberText, opacity: uploading ? 0.5 : 1 }}
+              >
+                {uploading
+                  ? 'Saving photo…'
+                  : ownProfile?.avatar_url
+                    ? 'Change profile picture'
+                    : 'Add profile picture'}
+              </Text>
+            </Pressable>
           </View>
         </View>
 
