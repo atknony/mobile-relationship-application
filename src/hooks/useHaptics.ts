@@ -20,5 +20,11 @@ export function useHaptics() {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
   }, []);
 
-  return { chargeHaptic, burstHaptic, releaseEarlyHaptic, errorHaptic };
+  // The moment the hold passes the send threshold. The send screen is wordless,
+  // so this tap is the only notice the user gets that releasing will now send.
+  const readyHaptic = useCallback(() => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
+  }, []);
+
+  return { chargeHaptic, burstHaptic, releaseEarlyHaptic, errorHaptic, readyHaptic };
 }

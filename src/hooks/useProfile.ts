@@ -1,13 +1,26 @@
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { endReplacedSession, isSessionRevoked } from '@/lib/activeDevice';
 import { useAuthStore } from '@/stores/authStore';
 import { useProfileStore } from '@/stores/profileStore';
 import type { Profile, Pair } from '@/types/database';
 
+/**
+ * How often an unpaired profile is re-read while waiting for the other side.
+ *
+ * Nothing pushes pair activation to the person who generated the code: their
+ * own row is changed server-side by `redeem-invite-code`, and `profiles` has no
+ * Realtime subscription. The invite screen used to poll from
+ * `WaitingForPartner`, which only mounts after Copy or Share is tapped — read
+ * the code out loud and that device waited forever. The poll belongs to the
+ * state ("signed in, has a profile, not yet paired"), not to one component's
+ * render branch, so it lives on the query the root layout already owns.
+ */
+const UNPAIRED_POLL_MS = 3000;
+
 export function useProfile() {
   const userId = useAuthStore((s) => s.user?.id);
-  const isDemo = useAuthStore((s) => s.isDemo);
   const setOwnProfile = useProfileStore((s) => s.setOwnProfile);
   const setPairId = useProfileStore((s) => s.setPairId);
 
@@ -23,10 +36,26 @@ export function useProfile() {
         .eq('id', userId)
         .maybeSingle();
       if (error) throw error;
+
+      // "No row" is also what RLS answers a phone whose session was replaced
+      // on another device — the restrictive live-session policy filters rather
+      // than errors. Taken at face value, the guard would send a fully set-up
+      // user to onboarding (and on a cold start, straight past the splash).
+      // So an empty answer is only believed once the session is known to be
+      // alive; this costs one extra call, and only for someone with no profile.
+      if (!data && (await isSessionRevoked())) {
+        await endReplacedSession();
+        throw new Error('Session replaced on another device');
+      }
+
       return (data as Profile | null) ?? null;
     },
-    enabled: Boolean(userId) && !isDemo,
+    enabled: Boolean(userId),
     staleTime: 5 * 60 * 1000,
+    // Stops the moment partner_id lands; never runs during onboarding (no row
+    // yet) or once paired.
+    refetchInterval: (query) =>
+      query.state.data && !query.state.data.partner_id ? UNPAIRED_POLL_MS : false,
   });
 
   // When profile loads, sync to store. If paired, also fetch the pair UUID
@@ -38,12 +67,12 @@ export function useProfile() {
     if (query.data?.partner_id && userId) {
       supabase
         .from('pairs')
-        .select('id')
+        .select('id, created_at, activated_at')
         .or(`requester_id.eq.${userId},receiver_id.eq.${userId}`)
         .eq('status', 'active')
         .maybeSingle()
-        .then(({ data }: { data: Pick<Pair, 'id'> | null }) => {
-          setPairId(data?.id ?? null);
+        .then(({ data }: { data: Pick<Pair, 'id' | 'created_at' | 'activated_at'> | null }) => {
+          setPairId(data?.id ?? null, data?.created_at ?? null, data?.activated_at ?? null);
         });
     } else {
       setPairId(null);

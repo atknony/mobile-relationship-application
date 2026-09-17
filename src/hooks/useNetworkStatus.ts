@@ -1,30 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
-import NetInfo from '@react-native-community/netinfo';
+import { useNetworkStore } from '@/stores/networkStore';
 
 interface NetworkStatus {
-  isConnected: boolean;
+  isConnected: boolean | null; // null until the first NetInfo event
 }
 
-export function useNetworkStatus(onReconnect?: () => void): NetworkStatus {
-  const [isConnected, setIsConnected] = useState(true);
-  const wasOffline = useRef(false);
-
-  useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener((state) => {
-      const connected = state.isConnected ?? true;
-
-      if (!connected) {
-        wasOffline.current = true;
-      } else if (wasOffline.current) {
-        wasOffline.current = false;
-        onReconnect?.();
-      }
-
-      setIsConnected(connected);
-    });
-
-    return () => unsubscribe();
-  }, [onReconnect]);
-
+/**
+ * Read-only view of connectivity. The single NetInfo listener lives in
+ * src/lib/pingQueue.ts — this hook deliberately owns no subscription, because
+ * it is called from several screens at once.
+ */
+export function useNetworkStatus(): NetworkStatus {
+  const isConnected = useNetworkStore((s) => s.isConnected);
   return { isConnected };
 }

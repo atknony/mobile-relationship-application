@@ -1,29 +1,70 @@
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Share } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
+import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
+import { shadows } from '@/constants/shadows';
 
-interface InviteCodeDisplayProps {
+/**
+ * The code, as six tiles, with the two things you actually do with it.
+ */
+export function InviteCodeDisplay({
+  code,
+  onShared,
+}: {
   code: string;
-}
-
-export function InviteCodeDisplay({ code }: InviteCodeDisplayProps) {
+  onShared?: () => void;
+}) {
   const { showToast } = useToast();
 
   const handleCopy = async () => {
     await Clipboard.setStringAsync(code);
-    showToast('Code copied!', 'success');
+    showToast('Code copied', 'success');
+    onShared?.();
+  };
+
+  const handleShare = async () => {
+    const result = await Share.share({
+      message: `Join me on Imm — my code is ${code}`,
+    });
+    if (result.action === Share.sharedAction) onShared?.();
   };
 
   return (
-    <View className="items-center gap-4">
-      <Pressable onPress={handleCopy} className="items-center gap-2">
-        <View className="bg-white rounded-3xl px-10 py-6">
-          <Text className="font-nunito-extrabold text-imm-text text-4xl tracking-widest">
-            {code}
-          </Text>
+    <View
+      className="bg-imm-surface"
+      style={{
+        borderRadius: 28,
+        paddingVertical: 30,
+        paddingHorizontal: 24,
+        gap: 22,
+        width: '100%',
+        boxShadow: shadows.cardTall,
+      }}
+    >
+      <View className="flex-row justify-center" style={{ gap: 7 }}>
+        {code.split('').map((char, i) => (
+          <View
+            key={i}
+            className="bg-imm-surface-sunk items-center justify-center"
+            style={{ width: 38, height: 50, borderRadius: 12 }}
+          >
+            <Text className="font-nunito-bold text-imm-text" style={{ fontSize: 22 }}>
+              {char}
+            </Text>
+          </View>
+        ))}
+      </View>
+
+      <View className="flex-row" style={{ gap: 10 }}>
+        <View style={{ flex: 1 }}>
+          <Button variant="quiet" onPress={handleCopy}>
+            Copy
+          </Button>
         </View>
-        <Text className="font-nunito text-imm-muted text-sm">tap to copy</Text>
-      </Pressable>
+        <View style={{ flex: 1 }}>
+          <Button onPress={handleShare}>Share</Button>
+        </View>
+      </View>
     </View>
   );
 }

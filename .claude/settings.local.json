@@ -4,5 +4,11 @@
       "Bash(node -e \"const fs = require\\('expo-file-system'\\); console.log\\(Object.keys\\(fs\\).filter\\(k => k.toLowerCase\\(\\).includes\\('dir'\\) || k.toLowerCase\\(\\).includes\\('path'\\)\\).join\\('\\\\n'\\)\\)\")",
       "Bash(npx expo *)"
     ]
-  }
+  },
+  "enabledPlugins": {
+    "expo@claude-plugins-official": false
+  },
+  "enabledMcpjsonServers": [
+    "supabase"
+  ]
 }

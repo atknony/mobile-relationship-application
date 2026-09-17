@@ -15,7 +15,10 @@ interface PingState {
   dequeueOfflinePing: (localId: string) => void;
   incrementRetryCount: (localId: string) => void;
   clearOfflineQueue: () => void;
+  /** Lib-internal (src/lib/pingQueue.ts) — replaces the queue wholesale. */
   setOfflineQueue: (queue: QueuedPing[]) => void;
+  /** Rehydration: union by localId, keeping the in-memory entry on collision. */
+  mergeQueue: (stored: QueuedPing[]) => void;
 
   setIncomingPing: (ping: IncomingPing | null) => void;
   dismissIncomingPing: () => void;
@@ -46,6 +49,16 @@ export const usePingStore = create<PingState>((set) => ({
   clearOfflineQueue: () => set({ offlineQueue: [] }),
 
   setOfflineQueue: (queue) => set({ offlineQueue: queue }),
+
+  mergeQueue: (stored) =>
+    set((state) => {
+      const seen = new Set(state.offlineQueue.map((p) => p.localId));
+      const merged = [
+        ...state.offlineQueue,
+        ...stored.filter((p) => !seen.has(p.localId)),
+      ];
+      return { offlineQueue: merged.sort((a, b) => a.createdAt - b.createdAt) };
+    }),
 
   setIncomingPing: (incomingPing) => set({ incomingPing }),
 

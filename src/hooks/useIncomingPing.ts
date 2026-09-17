@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
-import * as Notifications from 'expo-notifications';
+import { Notifications } from '@/lib/notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Haptics from 'expo-haptics';
 import { usePingStore } from '@/stores/pingStore';
+import { VIBRATE_KEY } from '@/hooks/usePreferences';
 import { INCOMING_PING_AUTODISMISS_MS } from '@/constants/timing';
 
 export function useIncomingPing() {
@@ -20,15 +23,23 @@ export function useIncomingPing() {
     // Auto-dismiss after 8 seconds
     dismissTimer.current = setTimeout(dismiss, INCOMING_PING_AUTODISMISS_MS);
 
-    // Fire local notification if app is backgrounded
+    // Fire a local notification if the app is backgrounded. The ping lands in
+    // the thread either way.
     if (AppState.currentState !== 'active') {
-      void Notifications.scheduleNotificationAsync({
+      void Notifications?.scheduleNotificationAsync({
         content: {
-          title: `${incomingPing.fromDisplayName} is thinking of you 💙`,
-          body: incomingPing.momentUrl ? 'Sent you a moment' : undefined,
+          title: `${incomingPing.fromDisplayName} is thinking of you`,
+          body: incomingPing.momentPath ? 'Sent you a moment' : undefined,
           sound: true,
         },
         trigger: null, // fire immediately
+      });
+    }
+
+    // A ping arriving while you are looking at the app should still be felt.
+    if (AppState.currentState === 'active') {
+      void AsyncStorage.getItem(VIBRATE_KEY).then((raw) => {
+        if (raw !== 'false') void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       });
     }
 
