@@ -14,9 +14,20 @@ interface AppState {
    */
   isRevealed: boolean;
   setRevealed: (revealed: boolean) => void;
+
+  /**
+   * Set when this phone was signed out because the account signed in on
+   * another one (`lib/activeDevice.ts`). Read once by `useActiveDevice` to
+   * explain the sign-out, then cleared — without it the phone would simply
+   * drop to the login screen for no visible reason.
+   */
+  sessionReplaced: boolean;
+  setSessionReplaced: (replaced: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
   isRevealed: false,
   setRevealed: (isRevealed) => set({ isRevealed }),
+  sessionReplaced: false,
+  setSessionReplaced: (sessionReplaced) => set({ sessionReplaced }),
 }));

@@ -20,6 +20,7 @@ import { Newsreader_400Regular_Italic } from '@expo-google-fonts/newsreader';
 import { queryClient } from '@/lib/queryClient';
 import { initPingQueue } from '@/lib/pingQueue';
 import { useSupabaseSession } from '@/hooks/useSupabaseSession';
+import { useActiveDevice } from '@/hooks/useActiveDevice';
 import { useProfile } from '@/hooks/useProfile';
 import { useAuthStore } from '@/stores/authStore';
 import { useProfileStore } from '@/stores/profileStore';
@@ -77,6 +78,8 @@ function resolveGroup(
 
 function RootNavigator() {
   useSupabaseSession();
+  // Every signed-in group, not just (home): one account, one phone.
+  useActiveDevice();
 
   // Owns the offline queue's NetInfo/AppState listeners for the app's lifetime.
   // In an effect rather than module scope so nothing touches NetInfo during

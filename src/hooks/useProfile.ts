@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { endReplacedSession, isSessionRevoked } from '@/lib/activeDevice';
 import { useAuthStore } from '@/stores/authStore';
 import { useProfileStore } from '@/stores/profileStore';
 import type { Profile, Pair } from '@/types/database';
@@ -35,6 +36,18 @@ export function useProfile() {
         .eq('id', userId)
         .maybeSingle();
       if (error) throw error;
+
+      // "No row" is also what RLS answers a phone whose session was replaced
+      // on another device — the restrictive live-session policy filters rather
+      // than errors. Taken at face value, the guard would send a fully set-up
+      // user to onboarding (and on a cold start, straight past the splash).
+      // So an empty answer is only believed once the session is known to be
+      // alive; this costs one extra call, and only for someone with no profile.
+      if (!data && (await isSessionRevoked())) {
+        await endReplacedSession();
+        throw new Error('Session replaced on another device');
+      }
+
       return (data as Profile | null) ?? null;
     },
     enabled: Boolean(userId),

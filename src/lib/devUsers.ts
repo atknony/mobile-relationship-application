@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { claimActiveDevice } from '@/lib/activeDevice';
 
 /**
  * Dev-only shortcut for the two seeded test accounts.
@@ -29,6 +30,8 @@ export async function signInDevUser(input: string): Promise<string | null> {
   if (!__DEV__ || !user) return 'Unknown test user.';
 
   const { error } = await supabase.auth.signInWithPassword(user);
+  if (error) return error.message;
+  // Same as a real sign-in: this phone becomes the account's only one.
   // useSupabaseSession picks the session up and the guard routes from there.
-  return error ? error.message : null;
+  return claimActiveDevice();
 }

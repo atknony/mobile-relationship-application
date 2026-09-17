@@ -3,6 +3,7 @@ import { View, Text, Pressable, KeyboardAvoidingView, Platform } from 'react-nat
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { claimActiveDevice } from '@/lib/activeDevice';
 import { CodeInput, type CodeInputHandle } from '@/components/ui/CodeInput';
 import { useToast } from '@/components/ui/Toast';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -33,10 +34,18 @@ export default function VerifyScreen() {
         token,
         type: 'sms',
       });
-      setLoading(false);
 
-      if (error) showToast('Invalid code. Try again.', 'error');
-      // On success useSupabaseSession fires and the guard redirects.
+      if (error) {
+        setLoading(false);
+        showToast('Invalid code. Try again.', 'error');
+        return;
+      }
+
+      // Signs this account out of any other phone. On success useSupabaseSession
+      // has already fired and the guard redirects.
+      const claimError = await claimActiveDevice();
+      setLoading(false);
+      if (claimError) showToast(claimError, 'error');
     },
     [phone, showToast]
   );
