@@ -19,6 +19,9 @@ They are real `auth.users` rows signing in with email + password, so RLS, the Ed
 Realtime and pairing all behave exactly as they do for a real account — run one on each
 device/simulator to drive both sides of the pairing flow. Everything is gated on `__DEV__`.
 
+One account is one phone (see "Single active device"), so signing in as `01` on a second
+device signs the first one out — use `01` on one device and `02` on the other.
+
 No profile rows are seeded, so each login walks onboarding → pairing. The migration's header
 comment has the SQL to wipe both accounts' profiles/pairs/moments and start over.
 
@@ -44,6 +47,7 @@ src/
     pingQueue.ts            # SINGLE OWNER of the send path — see note below
     uploadImage.ts          # the only correct way to put a local photo in a bucket
     avatar.ts               # pick / change profile photo — fresh path, cache + store sync
+    activeDevice.ts         # one account, one phone: claim on sign-in, detect replacement
     signOut.ts              # the single sign-out path — never navigates, see gotcha
     devUsers.ts             # __DEV__ shortcut: "01"/"02" → the seeded test accounts
   stores/                   # Zustand stores
@@ -51,10 +55,11 @@ src/
     profileStore.ts         # ownProfile, partnerProfile, pairedWith, pairId
     pingStore.ts            # pingStatus, offlineQueue, incomingPing
     networkStore.ts         # isConnected (null until first NetInfo event)
-    appStore.ts             # isRevealed — startup cover is down, focus is allowed
+    appStore.ts             # isRevealed (startup cover is down); sessionReplaced (say why)
     unpairStore.ts          # (reserved — not active, see unpair notes below)
   hooks/
     useSupabaseSession.ts   # onAuthStateChange → authStore (call once from root)
+    useActiveDevice.ts      # signs this phone out when the account signs in elsewhere (root)
     useProfile.ts           # TanStack Query: own profile + fetches pair UUID
     usePartnerProfile.ts    # TanStack Query: partner profile (by partner_id)
     usePingRealtime.ts      # Supabase Realtime subscription on moments table
@@ -72,7 +77,8 @@ src/
   components/
     ui/                     # Button, TextInput, Avatar, LoadingSpinner, Toast,
                             #   BackButton (in-group back, with a fallback),
-                            #   SignOutLink (the only way out of a guarded group)
+                            #   SignOutLink (the only way out of a guarded group),
+                            #   MomentPhoto (ping photo: fixed slot, fades in on decode)
     ping/                   # PingButton, PingRipple, PingParticles, IncomingPingOverlay
     pair/                   # InviteCodeDisplay, InviteCodeInput
     unpair/                 # UnpairInitiator, UnpairPendingBanner (banner is stub)
@@ -212,7 +218,14 @@ Policies:
   `profiles`** — that is 42P17, infinite recursion, and it takes the whole app down.
 - `pairs`: members (requester_id or receiver_id) can read their own pair
 - `moments`: members of the active pair can read moments for that pair
-- Writes to `moments` and `pairs` go through Edge Functions only
+- Writes to `moments` and `pairs` go through Edge Functions only — there are no client write
+  policies or grants on either (`20260917140000` removed the dashboard-era Turkish policies)
+- **`profiles` writes are column-granted**: `insert (id, username, avatar_url)`,
+  `update (id, username, avatar_url, push_token)`. A client could previously rewrite its own
+  `partner_id`, and the storage read policies trust that column — so it could read anyone's
+  photos. Never grant table-wide INSERT/UPDATE on `profiles`; a new client-editable column
+  needs its own column grant.
+- Every table also carries the restrictive `"live session only"` policy (see Single active device)
 
 ## profileStore fields
 - `ownProfile` — own Profile row
@@ -233,6 +246,30 @@ To regenerate types from the live schema:
 ```bash
 npx supabase gen types typescript --project-id tzhkrhxnfjephtrxbmvp > src/types/database.ts
 ```
+
+## Single active device
+
+An account is signed in on one phone at a time (`20260917120000_single_active_device.sql`,
+`src/lib/activeDevice.ts`, `src/hooks/useActiveDevice.ts`).
+
+- **Claim.** Right after a successful sign-in (`verify.tsx`, `devUsers.ts`) the app calls the
+  `claim_active_device()` RPC. It records the session in `active_devices`, deletes every other
+  row in `auth.sessions` for the user (refresh tokens cascade) and clears `push_token`. A
+  session restored from storage must never claim; the RPC also refuses a session that is
+  already revoked, so an old phone cannot take the account back. If the claim fails the new
+  sign-in is dropped rather than leaving two phones on one account.
+- **Enforce.** Deleting the session is enough for Auth and the Edge Functions (`getUser` →
+  `session_not_found`), but **PostgREST, Storage and Realtime only check a JWT's signature and
+  expiry** — measured: a revoked token kept full read/write for its remaining lifetime (≤1h).
+  A restrictive `"live session only"` policy on `profiles`, `pairs`, `moments` and
+  `storage.objects` requires `session_is_live()`. Any new table needs the same policy.
+- **Detect.** The old phone learns through Realtime on `active_devices` (~1s while open) and
+  through `getUser()` on launch and on every foreground. `active_devices` has *no* live-session
+  check on purpose: the phone that needs the event is the one whose session was just deleted.
+- **RLS filters, it does not error.** A replaced session reads *no rows*, so `useProfile` only
+  believes "no profile" after confirming the session is alive — otherwise a replaced phone would
+  be routed to onboarding. Network errors never count as revoked: being offline must not sign
+  anyone out.
 
 ## Unpair flow
 
@@ -335,6 +372,10 @@ to emit one of those events or the thread will silently go stale again.
   than *back*: dropping the session is the only thing that changes the guard's answer.
   `src/lib/signOut.ts` deliberately does not navigate, and falls back to a local sign-out so
   a failed network call cannot strand someone on a screen with no way out.
+- **A photo's space is reserved from the path, never from the URL.** The overlay rendered its
+  photo card only once the signed URL existed, so the card popped in ~1s after the name and
+  shoved the centred column up. Render ping photos through `MomentPhoto`, which lays out at
+  full size as soon as the path is known and fades the image in on `onLoad`.
 - **Never use Android `elevation`.** Every translucent white surface on the ping screen
   carried `elevation` alongside the iOS `shadow*` props, and Android painted the outline
   shadow as a hard, faceted copy of the shape *inside* the control — the white octagon in
