@@ -6,6 +6,7 @@ import { usePushRegistration } from '@/hooks/usePushRegistration';
 import { usePingFeedback } from '@/hooks/usePingFeedback';
 import { IncomingPingOverlay } from '@/components/ping/IncomingPingOverlay';
 import { colors } from '@/constants/colors';
+import { panel } from '@/constants/transitions';
 
 function HomeProviders() {
   // useProfile() lives in the root layout — the auth guard needs it before
@@ -29,7 +30,11 @@ export default function HomeLayout() {
           headerShown: false,
           contentStyle: { backgroundColor: colors.bg },
         }}
-      />
+      >
+        {/* Home stays put; Moments and Settings rise over it and sink away. */}
+        <Stack.Screen name="thread" options={panel} />
+        <Stack.Screen name="settings" options={panel} />
+      </Stack>
       <IncomingPingOverlay />
     </>
   );

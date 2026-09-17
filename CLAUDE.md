@@ -88,6 +88,7 @@ src/
   constants/
     colors.ts               # Design tokens (mirror of tailwind.config.js)
     shadows.ts              # boxShadow tokens — the only source of depth
+    transitions.ts          # screen transitions — stateChange / panel / step
     vessel.ts               # Tuned constants for the send interaction
     timing.ts               # Animation constants (CHARGE_DURATION_MS, spring configs)
     hapticPatterns.ts       # Haptic style mappings
@@ -124,9 +125,15 @@ from `profile.partner_id` (the partner's user_id); it is non-null only when the 
 the navigator is still on the route the app booted into (expo-router resolves `/` to `(home)/index`
 before anything is decided) until `replace()` lands a render later. So the splash and the cover are
 gated on `settled` — `ready` *and* the router already on the resolved group. Hiding on `ready`
-uncovers the navigator one render early, which is the startup flash. The `<Slot />` stays mounted
-throughout and is covered rather than withheld, because expo-router throws if the root layout's
-first render has no navigator. `STARTUP_SETTLE_TIMEOUT_MS` reveals the app anyway if settling never
+uncovers the navigator one render early, which is the startup flash. The root navigator stays
+mounted throughout and is covered rather than withheld, because expo-router throws if the root
+layout's first render has no navigator.
+
+**Transitions live in `src/constants/transitions.ts`** — `stateChange` (cross-fade between groups),
+`panel` (Moments/Settings rise over Home, which never moves), `step` (parallax for linear flows).
+The root is a `Stack`, not a `<Slot />`, only so group changes can fade; a Slot hard-cuts. Its
+fade is switched on a frame *after* the reveal: the startup replace commits in the same render
+that lifts the cover, and animating it would replay the startup flash as a cross-fade. `STARTUP_SETTLE_TIMEOUT_MS` reveals the app anyway if settling never
 happens — a flash is recoverable, a splash that never lifts is not.
 
 **The cover hides the screen, not the device.** A screen the guard is about to replace still

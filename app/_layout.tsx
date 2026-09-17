@@ -1,7 +1,7 @@
 import '../global.css';
 import { useEffect, useState } from 'react';
 import { Keyboard, StyleSheet, View } from 'react-native';
-import { Slot, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import type { Session } from '@supabase/supabase-js';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -29,6 +29,7 @@ import { ToastProvider } from '@/components/ui/Toast';
 import { Notifications } from '@/lib/notifications';
 import { colors } from '@/constants/colors';
 import { STARTUP_SETTLE_TIMEOUT_MS } from '@/constants/timing';
+import { stateChange } from '@/constants/transitions';
 import type { Profile } from '@/types/database';
 
 SplashScreen.preventAutoHideAsync();
@@ -157,6 +158,19 @@ function RootNavigator() {
     Keyboard.dismiss();
   }, [revealed]);
 
+  // Group changes cross-fade (signing in or out, pairing, unpairing) — but not
+  // the one that happens under the startup cover. That replace lands in the
+  // same render that flips `revealed`, so animating it would play a fade from
+  // the boot route to the real one just as the cover lifts: the startup flash
+  // again, only softer. Turned on a frame after the reveal instead, by which
+  // time that screen is already mounted without an animation. Never turned off.
+  const [animateGroupChanges, setAnimateGroupChanges] = useState(false);
+  useEffect(() => {
+    if (!revealed) return;
+    const frame = requestAnimationFrame(() => setAnimateGroupChanges(true));
+    return () => cancelAnimationFrame(frame);
+  }, [revealed]);
+
   useEffect(() => {
     if (!ready) return;
 
@@ -180,8 +194,16 @@ function RootNavigator() {
           splash's own backgroundColor (see the expo-splash-screen plugin entry
           in app.json), so the handover is invisible however the native splash
           happens to be timed, and the cover takes the touches that nobody
-          should be able to land on a screen that is still being decided. */}
-      <Slot />
+          should be able to land on a screen that is still being decided.
+          A Stack rather than a bare <Slot /> only so the guard's replace()
+          between groups can animate; a Slot swaps them in a hard cut. */}
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.bg },
+          ...(animateGroupChanges ? stateChange : { animation: 'none' }),
+        }}
+      />
       {!revealed && <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg }]} />}
     </>
   );
