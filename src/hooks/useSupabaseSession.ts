@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { queryClient } from '@/lib/queryClient';
 import { resetPingQueue } from '@/lib/pingQueue';
+import { clearImageCache } from '@/lib/imageCache';
 import { useAuthStore } from '@/stores/authStore';
 import { useProfileStore } from '@/stores/profileStore';
 import { useUnpairStore } from '@/stores/unpairStore';
@@ -25,6 +26,8 @@ export function useSupabaseSession() {
       // disk, so the next user to sign in sent the previous user's pings.
       void resetPingQueue();
       resetUnpair();
+      // Photos on disk belong to the account that downloaded them.
+      clearImageCache();
       // Last, once nothing is reading it. Every key is scoped by a user, pair
       // or storage path, so this is not about leaking one account's data into
       // another's — it is that gcTime is 10 minutes, and signing back into the

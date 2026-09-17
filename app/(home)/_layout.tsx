@@ -4,6 +4,7 @@ import { usePairRealtime } from '@/hooks/usePairRealtime';
 import { usePartnerProfile } from '@/hooks/usePartnerProfile';
 import { usePushRegistration } from '@/hooks/usePushRegistration';
 import { usePingFeedback } from '@/hooks/usePingFeedback';
+import { usePrefetchImages } from '@/hooks/usePrefetchImages';
 import { IncomingPingOverlay } from '@/components/ping/IncomingPingOverlay';
 import { colors } from '@/constants/colors';
 import { panel } from '@/constants/transitions';
@@ -17,6 +18,7 @@ function HomeProviders() {
   usePairRealtime();
   usePushRegistration();
   usePingFeedback();
+  usePrefetchImages();
 
   return null;
 }

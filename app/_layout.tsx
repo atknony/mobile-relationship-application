@@ -19,6 +19,7 @@ import { Newsreader_400Regular_Italic } from '@expo-google-fonts/newsreader';
 
 import { queryClient } from '@/lib/queryClient';
 import { initPingQueue } from '@/lib/pingQueue';
+import { pruneImageCache } from '@/lib/imageCache';
 import { useSupabaseSession } from '@/hooks/useSupabaseSession';
 import { useActiveDevice } from '@/hooks/useActiveDevice';
 import { useProfile } from '@/hooks/useProfile';
@@ -86,6 +87,13 @@ function RootNavigator() {
   // In an effect rather than module scope so nothing touches NetInfo during
   // bundle evaluation.
   useEffect(() => initPingQueue(), []);
+
+  // Bounds the on-disk photo cache. Once per launch, and after first paint's
+  // worth of work rather than during it.
+  useEffect(() => {
+    const handle = setTimeout(() => pruneImageCache(), 5000);
+    return () => clearTimeout(handle);
+  }, []);
 
   // Own profile decides between onboarding / pair / home, so it is fetched
   // here rather than in (home) — which the guard can only reach once the

@@ -5,6 +5,11 @@ export const CHARGE_DURATION_MS = 1200;
 // Lowered from 0.85 after testing: 1200ms felt long at the old threshold.
 export const MIN_CHARGE_THRESHOLD = 0.75;
 export const INCOMING_PING_AUTODISMISS_MS = 8000;
+// How long an incoming photo ping is held back so its photo can arrive with it.
+// A typical photo is ready well inside a second. Past this the ping is shown
+// anyway, with the photo's space reserved: a late photo is a flaw, a ping that
+// never arrives on a bad connection would be a failure.
+export const INCOMING_PHOTO_WAIT_MS = 3000;
 export const TOAST_AUTODISMISS_MS = 3000;
 export const OFFLINE_PING_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 export const MAX_PING_RETRIES = 3;

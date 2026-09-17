@@ -1,16 +1,18 @@
-import { View, Text, Image } from 'react-native';
+import { View, Text } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { gradients } from '@/constants/colors';
 import { shadows } from '@/constants/shadows';
-import { useSignedUrl } from '@/hooks/useSignedUrl';
+import { useCachedImage } from '@/hooks/useCachedImage';
+
+const FADE_IN_MS = 200;
 
 interface AvatarProps {
-  /** A storage path in the private `avatars` bucket, signed here for display. */
+  /** A storage path in the private `avatars` bucket. */
   uri?: string | null;
   /**
    * A photo already on this device, shown in preference to `uri`. Lets a
-   * just-picked photo appear at once instead of waiting on the upload, a
-   * signature and a download of the same image.
+   * just-picked photo appear at once instead of waiting on the upload.
    */
   localUri?: string | null;
   name?: string | null;
@@ -21,11 +23,18 @@ interface AvatarProps {
 
 /**
  * Initials on the gradient, or the real photo filling the same circle.
+ *
+ * A photo already on disk (see lib/imageCache.ts) is drawn straight away with no
+ * transition and no initials behind it — painting the initials first would
+ * flash a letter for a frame on every mount. Only a photo that actually has to
+ * download sits over the initials and cross-fades in.
  */
 export function Avatar({ uri, localUri, name, size = 56, tone = 'cool' }: AvatarProps) {
   const initial = name?.trim()?.[0]?.toUpperCase() ?? '';
-  const { data: signedUrl } = useSignedUrl(localUri ? null : uri, 'avatars');
-  const source = localUri ?? signedUrl;
+  const cached = useCachedImage('avatars', localUri ? null : uri);
+  const source = localUri ?? cached.uri;
+  const instant = Boolean(localUri) || cached.cachedAtMount;
+  const hasPhoto = Boolean(localUri || uri);
 
   return (
     <View
@@ -37,9 +46,7 @@ export function Avatar({ uri, localUri, name, size = 56, tone = 'cool' }: Avatar
         boxShadow: shadows.avatar,
       }}
     >
-      {source ? (
-        <Image source={{ uri: source }} style={{ width: size, height: size }} resizeMode="cover" />
-      ) : (
+      {hasPhoto && instant ? null : (
         <LinearGradient
           {...(tone === 'warm'
             ? {
@@ -53,7 +60,13 @@ export function Avatar({ uri, localUri, name, size = 56, tone = 'cool' }: Avatar
                 start: { x: 0.15, y: 0 },
                 end: { x: 0.85, y: 1 },
               })}
-          style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+          style={{
+            position: 'absolute',
+            width: size,
+            height: size,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
           <Text
             className="font-nunito-semibold text-white"
@@ -63,6 +76,18 @@ export function Avatar({ uri, localUri, name, size = 56, tone = 'cool' }: Avatar
           </Text>
         </LinearGradient>
       )}
+
+      {source ? (
+        <Image
+          source={{ uri: source }}
+          style={{ width: size, height: size }}
+          contentFit="cover"
+          // The file is already on disk; keeping a second copy there would be waste.
+          cachePolicy="memory"
+          transition={instant ? null : FADE_IN_MS}
+          onError={localUri ? undefined : cached.onDecodeError}
+        />
+      ) : null}
     </View>
   );
 }

@@ -34,20 +34,12 @@ function dayKey(date: Date): string {
 }
 
 /**
- * The history the `moments` table has always stored and nothing ever displayed.
- *
- * Realtime already tells us when a ping arrives, so the subscription invalidates
- * this query rather than this polling.
+ * Shared by the thread and by `usePrefetchThread`, which loads the same query
+ * from Home so the thread opens with its rows — and their photos — already there.
  */
-export function useMomentsThread() {
-  const pairId = useProfileStore((s) => s.pairId);
-  const userId = useAuthStore((s) => s.user?.id);
-  const incomingPing = usePingStore((s) => s.incomingPing);
-  const offlineQueue = usePingStore((s) => s.offlineQueue);
-  const queryClient = useQueryClient();
-
-  const query = useQuery({
-    queryKey: ['moments', pairId],
+export function momentsQueryOptions(pairId: string | null) {
+  return {
+    queryKey: ['moments', pairId] as const,
     enabled: Boolean(pairId),
     staleTime: 30_000,
     queryFn: async (): Promise<Moment[]> => {
@@ -61,7 +53,23 @@ export function useMomentsThread() {
       if (error) throw error;
       return (data ?? []) as Moment[];
     },
-  });
+  };
+}
+
+/**
+ * The history the `moments` table has always stored and nothing ever displayed.
+ *
+ * Realtime already tells us when a ping arrives, so the subscription invalidates
+ * this query rather than this polling.
+ */
+export function useMomentsThread() {
+  const pairId = useProfileStore((s) => s.pairId);
+  const userId = useAuthStore((s) => s.user?.id);
+  const incomingPing = usePingStore((s) => s.incomingPing);
+  const offlineQueue = usePingStore((s) => s.offlineQueue);
+  const queryClient = useQueryClient();
+
+  const query = useQuery(momentsQueryOptions(pairId));
 
   // A ping landing over Realtime is the signal to refetch.
   useEffect(() => {

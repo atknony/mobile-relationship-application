@@ -68,7 +68,8 @@ src/
     useNetworkStatus.ts     # reads networkStore — owns no subscription
     usePingFeedback.ts      # queue events → toast/haptics + ping status reset
     usePushRegistration.ts  # Expo push token → profiles.push_token; tap handling
-    useSignedMomentUrl.ts   # signs a private storage path for display
+    useCachedImage.ts       # private storage photo → local file URI (disk cache first)
+    usePrefetchImages.ts    # warms avatars + thread photos from (home)
     usePingAnimation.ts     # Reanimated hold-to-charge gesture + shared values
     useHaptics.ts           # Haptic pattern wrappers
     useIncomingPing.ts      # Overlay trigger + local notification when backgrounded
@@ -187,8 +188,20 @@ gates on them server-side. "Keep photo moments" is in the handoff and was never 
 
 ### Storage buckets
 Both are **private**, both key their policies off the first path segment being the
-owner's user id, and both are read at display time through `useSignedUrl` — the
+owner's user id, and both are displayed through `useCachedImage` — the
 database stores a **path**, never a URL, and a signed URL is never persisted.
+
+**Photos are cached on disk by storage path** (`src/lib/imageCache.ts`), and rendered with
+`expo-image` (`cachePolicy="memory"` — the file is already on disk). Every launch used to
+re-download every photo: each launch mints new signed URLs with new tokens, so any cache keyed
+by URL (RN `Image`, expo-image's default) missed every time, after first waiting a round trip to
+sign. Paths are immutable — ping photos are never rewritten and avatars get a fresh path per
+change — so a cached file is valid forever and served with no signing and no network. The disk
+check is synchronous, which is what lets `Avatar`/`MomentPhoto` skip their placeholder and fade
+for a cached photo and draw it in the first frame. Uploads seed the cache (`uploadJpeg`), Home
+prefetches both avatars and the top of the thread (`usePrefetchImages`), an incoming ping
+prefetches its photo, sign-out clears the cache, launch prunes it to 400 files. **Never
+overwrite an object in place** — a cached copy would never be refreshed.
 
 - `moments` — ping photos at `<sender_user_id>/<local_id>.jpg`
 - `avatars` — profile photos at `<user_id>/avatar-<timestamp>.jpg` (`profiles.avatar_url`
@@ -383,6 +396,11 @@ to emit one of those events or the thread will silently go stale again.
   photo card only once the signed URL existed, so the card popped in ~1s after the name and
   shoved the centred column up. Render ping photos through `MomentPhoto`, which lays out at
   full size as soon as the path is known and fades the image in on `onLoad`.
+- **An incoming photo ping arrives whole.** `usePingRealtime` holds `setIncomingPing` until the
+  photo is downloaded *and* decoded into expo-image's memory cache (up to
+  `INCOMING_PHOTO_WAIT_MS`), so the name, photo, haptic and local notification appear together
+  instead of a text card that a photo drops into later. Deliveries are chained so a plain ping
+  cannot overtake a held photo ping. The reserved-space fade only shows past the timeout.
 - **Never use Android `elevation`.** Every translucent white surface on the ping screen
   carried `elevation` alongside the iOS `shadow*` props, and Android painted the outline
   shadow as a hard, faceted copy of the shape *inside* the control — the white octagon in

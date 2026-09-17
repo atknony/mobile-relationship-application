@@ -1,5 +1,6 @@
 import { File } from 'expo-file-system';
 import { supabase } from '@/lib/supabase';
+import { seedImage } from '@/lib/imageCache';
 
 const JPEG = 'image/jpeg';
 
@@ -39,5 +40,7 @@ export async function uploadJpeg(
     .upload(path, bytes, { contentType: JPEG, upsert });
 
   if (error) throw error;
+  // The sender already has these bytes; never make them download their own photo.
+  await seedImage(bucket, data.path, uri);
   return data.path;
 }
