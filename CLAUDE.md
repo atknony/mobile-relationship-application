@@ -264,6 +264,8 @@ Policies:
 - `partnerProfile` — partner's Profile row
 - `pairedWith` — partner's user_id (= `ownProfile.partner_id`), used by auth guard
 - `pairId` — UUID from the pairs table, fetched by `useProfile` after load, used by Realtime channel
+- `pairedSince` — `pairs.created_at`, "together since" in settings (when the invite was made, not activation)
+- `pairActivatedAt` — `pairs.activated_at`, when the pair actually went active; drives the pairing celebration
 
 ## Hold-to-ping animation
 
@@ -400,12 +402,15 @@ to emit one of those events or the thread will silently go stale again.
   explicit `contentType` (the supabase-js default is text/plain). `expo-file-system`'s
   `File` implements Blob structurally but is not `instanceof Blob`, so it takes the same
   wrong branch — read the bytes.
-- **Nothing pushes pair activation to the person who generated the code.** Their own
+- **The person who generated the code needs their own push, not just a poll.** Their own
   `profiles` row is changed server-side by `redeem-invite-code`, and `profiles` is not in the
-  Realtime publication. `useProfile` polls every 3s while `ownProfile` exists with no
-  `partner_id`, and stops the moment it lands. That poll used to live in `WaitingForPartner`,
-  which only mounts after Copy or Share is tapped — read the code out loud and that device
-  never redirected. Keep it on the query, not in a component.
+  Realtime publication, so nothing told that device the code had been redeemed. `useProfile`
+  polls every 3s while `ownProfile` exists with no `partner_id` as the fallback — keep it on the
+  query, not in a component; it used to live in `WaitingForPartner`, which only mounts after Copy
+  or Share is tapped, so a device that read the code out loud never redirected. `usePairActivation`
+  (mounted in `(pair)/_layout.tsx`) now subscribes to `pairs` UPDATEs where they are
+  `requester_id` and refetches the profile immediately — see "Pairing celebration" for why this
+  had to exist (both phones need to land on the celebration together, not one three seconds late).
 - **`getSession()` and `onAuthStateChange` both answer the initial question.** They used to race,
   and whichever landed first set `sessionLoaded` — so an `INITIAL_SESSION` of null arriving before
   the SecureStore read had finished declared the startup resolved-and-signed-out, sent an already
