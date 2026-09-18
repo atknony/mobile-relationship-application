@@ -4,6 +4,7 @@ import { Notifications } from '@/lib/notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { usePingStore } from '@/stores/pingStore';
+import { useProfileStore } from '@/stores/profileStore';
 import { VIBRATE_KEY } from '@/hooks/usePreferences';
 import { INCOMING_PING_AUTODISMISS_MS } from '@/constants/timing';
 
@@ -24,8 +25,11 @@ export function useIncomingPing() {
     dismissTimer.current = setTimeout(dismiss, INCOMING_PING_AUTODISMISS_MS);
 
     // Fire a local notification if the app is backgrounded. The ping lands in
-    // the thread either way.
-    if (AppState.currentState !== 'active') {
+    // the thread either way. A device with a push token already gets the
+    // remote push from send-ping, so this is only the fallback for one that
+    // has none (Expo Go, permission denied) — otherwise it arrives twice.
+    const hasPush = !!useProfileStore.getState().ownProfile?.push_token;
+    if (AppState.currentState !== 'active' && !hasPush) {
       void Notifications?.scheduleNotificationAsync({
         content: {
           title: `${incomingPing.fromDisplayName} is thinking of you`,

@@ -35,13 +35,19 @@ import type { Profile } from '@/types/database';
 
 SplashScreen.preventAutoHideAsync();
 
+// Only consulted while the app is in the foreground. A ping push that arrives
+// then is already on screen — Realtime opened the overlay and played the
+// haptic — so a system banner on top of it would announce it twice.
 Notifications?.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowList: true,
-  }),
+  handleNotification: async (notification) => {
+    const show = notification.request.content.data?.type !== 'ping';
+    return {
+      shouldShowBanner: show,
+      shouldPlaySound: show,
+      shouldSetBadge: false,
+      shouldShowList: show,
+    };
+  },
 });
 
 // Entry route of each auth state's group. The root layout must render a

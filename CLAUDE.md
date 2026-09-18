@@ -8,7 +8,11 @@ A minimalist couples app: one tap sends a "ping" (push notification + vibration)
 
 ```bash
 # .env is already filled in with Supabase credentials
+npm start            # Metro for an installed development build (Expo Go still works, minus push)
+npm run android      # build + install the Android dev client locally (expo run:android)
 ```
+
+The app runs as an EAS development build (`expo-dev-client`) — see the push gotcha below.
 
 ### Test accounts
 
@@ -364,11 +368,20 @@ to emit one of those events or the thread will silently go stale again.
 
 ## Critical gotchas
 
-- **Push notifications require a development build.** Expo Go has not supported remote
-  push since SDK 53, so in Expo Go `usePushRegistration` deliberately no-ops and
-  `profiles.push_token` stays null — pings then only arrive while the partner has the
-  app open. This is expected, not a bug. To test push: `eas build --profile development`,
-  plus FCM V1 credentials (Android) and an APNs key (iOS).
+- **Push notifications require a development build** (`expo-dev-client`). Expo Go has not
+  supported remote push since SDK 53, so in Expo Go `usePushRegistration` deliberately no-ops
+  and `profiles.push_token` stays null — pings then only arrive while the partner has the
+  app open. Development is on Windows, where `eas build --local` does not run: Android builds
+  locally with `npx expo prebuild -p android --clean && npm run android` (or in the cloud with
+  `eas build -p android --profile development`); iOS only in the cloud. Credentials live with
+  Expo, not Supabase — `send-ping` goes through the Expo push API: an FCM V1 service-account key
+  and an APNs key are uploaded with `eas credentials`. `google-services.json` is committed
+  (public identifiers) and wired in by `app.config.js` only when it exists, so a checkout
+  without it still prebuilds (just without FCM); service-account keys are gitignored.
+- **A ping must announce itself once.** With a token, a ping reaches the phone twice — the
+  push and Realtime. The foreground `setNotificationHandler` (`app/_layout.tsx`) suppresses
+  ping banners because the overlay is already up, and `useIncomingPing` schedules its local
+  notification only when this device has no `push_token` (the Expo Go fallback).
 - **Push delivery is best-effort and must never fail the ping.** The moment row is the
   source of truth; Realtime still delivers in-app if the push fails. A ticket returning
   `DeviceNotRegistered` clears that `push_token`.
