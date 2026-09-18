@@ -2,6 +2,7 @@ import { View, Text } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { GestureDetector } from 'react-native-gesture-handler';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 import { usePingAnimation } from '@/hooks/usePingAnimation';
 import { gradients } from '@/constants/colors';
 import { shadows } from '@/constants/shadows';
@@ -20,11 +21,12 @@ const RING = 74;
  */
 export function ReplyOrb({
   onSend,
-  label = 'hold to answer',
+  label,
 }: {
   onSend: () => void;
   label?: string;
 }) {
+  const { t } = useTranslation();
   const { p, burst, gesture } = usePingAnimation({
     onSend,
     onEarlyRelease: () => {
@@ -86,7 +88,7 @@ export function ReplyOrb({
         </View>
       </GestureDetector>
       <Text className="font-display text-imm-muted" style={{ fontSize: 12 }}>
-        {label}
+        {label ?? t('pings.holdToAnswer')}
       </Text>
     </View>
   );

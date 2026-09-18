@@ -26,7 +26,8 @@ export function TextInput({ label, error, ref, ...props }: Props) {
           style={{
             fontSize: 10,
             letterSpacing: 1.6,
-            textTransform: 'uppercase',
+            // Callers pass the label already in capitals (from the locale
+            // files): textTransform upper-cases with the device's locale rules.
             color: colors.muted,
           }}
         >

@@ -17,6 +17,7 @@ import {
 } from '@expo-google-fonts/nunito';
 import { Newsreader_400Regular_Italic } from '@expo-google-fonts/newsreader';
 
+import { restoreLanguage } from '@/lib/i18n';
 import { queryClient } from '@/lib/queryClient';
 import { initPingQueue } from '@/lib/pingQueue';
 import { pruneImageCache } from '@/lib/imageCache';
@@ -94,6 +95,15 @@ function RootNavigator() {
   // bundle evaluation.
   useEffect(() => initPingQueue(), []);
 
+  // A language chosen in Settings lives in AsyncStorage, so it cannot be known
+  // before the first render. Holding `ready` on it keeps the splash up until it
+  // is applied — otherwise a Turkish choice would paint a frame of the phone's
+  // language first. restoreLanguage never rejects.
+  const [languageRestored, setLanguageRestored] = useState(false);
+  useEffect(() => {
+    void restoreLanguage().then(() => setLanguageRestored(true));
+  }, []);
+
   // Bounds the on-disk photo cache. Once per launch, and after first paint's
   // worth of work rather than during it.
   useEffect(() => {
@@ -126,7 +136,8 @@ function RootNavigator() {
   // isLoading (not isPending) is false while the query is disabled, i.e. when
   // there is no session to load a profile for.
   const profilePending = Boolean(session) && profileQuery.isLoading;
-  const ready = sessionLoaded && (fontsLoaded || Boolean(fontError)) && !profilePending;
+  const ready =
+    sessionLoaded && languageRestored && (fontsLoaded || Boolean(fontError)) && !profilePending;
 
   // `ready` only means the answer is known — the navigator can still be showing
   // the route it booted into. expo-router resolves "/" to (home)/index before

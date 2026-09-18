@@ -1,5 +1,6 @@
 import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { colors } from '@/constants/colors';
 
 type Router = ReturnType<typeof useRouter>;
@@ -34,12 +35,13 @@ function BackGlyph() {
  */
 export function BackButton({
   fallback,
-  accessibilityLabel = 'Back',
+  accessibilityLabel,
 }: {
   fallback: Href;
   accessibilityLabel?: string;
 }) {
   const router = useRouter();
+  const { t } = useTranslation();
 
   const handlePress = () => {
     if (router.canGoBack()) router.back();
@@ -50,7 +52,7 @@ export function BackButton({
     <Pressable
       onPress={handlePress}
       hitSlop={12}
-      accessibilityLabel={accessibilityLabel}
+      accessibilityLabel={accessibilityLabel ?? t('common.back')}
       style={{
         width: 34,
         height: 34,

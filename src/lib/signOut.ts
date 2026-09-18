@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { i18n } from '@/lib/i18n';
 import { clearPushToken } from '@/hooks/usePushRegistration';
 import { useProfileStore } from '@/stores/profileStore';
 
@@ -37,5 +38,5 @@ export async function signOut(): Promise<string | null> {
   // still drops the session and still fires SIGNED_OUT; it only leaves the
   // refresh token alive server-side.
   const { error: localError } = await supabase.auth.signOut({ scope: 'local' });
-  return localError ? 'Could not sign out. Try again.' : null;
+  return localError ? i18n.t('auth.signOutFailed') : null;
 }

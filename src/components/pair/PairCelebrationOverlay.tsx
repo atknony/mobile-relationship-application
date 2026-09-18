@@ -11,6 +11,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { Avatar } from '@/components/ui/Avatar';
 import { ReplyOrb } from '@/components/ping/ReplyOrb';
 import { RadialGlow } from '@/components/ping/vessel/RadialGlow';
@@ -79,6 +80,7 @@ function CelebrationContent({
   onDismiss: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const { sendPing } = useSendPing();
 
   const meet = useSharedValue(0);
@@ -201,24 +203,24 @@ function CelebrationContent({
         <Animated.View style={[textStyle, { alignItems: 'center', gap: 6 }]}>
           <Text
             className="font-nunito text-imm-muted"
-            style={{ fontSize: 12, letterSpacing: 1.7, textTransform: 'uppercase' }}
+            style={{ fontSize: 12, letterSpacing: 1.7 }}
           >
-            {"you're connected"}
+            {t('pair.connected')}
           </Text>
           <Text
             className="font-display text-imm-text text-center"
             style={{ fontSize: 38, lineHeight: 44 }}
           >
-            You and {partnerName}
+            {t('pair.youAnd', { name: partnerName })}
           </Text>
           <Text className="font-nunito text-imm-muted text-center" style={{ fontSize: 15 }}>
-            From now on, one touch reaches them.
+            {t('pair.connectedBody')}
           </Text>
         </Animated.View>
 
         <Animated.View style={textStyle}>
           <ReplyOrb
-            label="hold to send the first one"
+            label={t('pair.holdFirst')}
             onSend={() => {
               void sendPing();
               onDismiss();

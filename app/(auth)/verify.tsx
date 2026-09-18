@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/lib/supabase';
 import { claimActiveDevice } from '@/lib/activeDevice';
 import { CodeInput, type CodeInputHandle } from '@/components/ui/CodeInput';
@@ -17,6 +18,7 @@ export default function VerifyScreen() {
   const [secondsLeft, setSecondsLeft] = useState(RESEND_SECONDS);
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const inputRef = useRef<CodeInputHandle>(null);
 
   // A real countdown — previously there was no way to ask for another code.
@@ -37,7 +39,7 @@ export default function VerifyScreen() {
 
       if (error) {
         setLoading(false);
-        showToast('Invalid code. Try again.', 'error');
+        showToast(t('auth.codeInvalid'), 'error');
         return;
       }
 
@@ -47,7 +49,7 @@ export default function VerifyScreen() {
       setLoading(false);
       if (claimError) showToast(claimError, 'error');
     },
-    [phone, showToast]
+    [phone, showToast, t]
   );
 
   const handleResend = useCallback(async () => {
@@ -58,8 +60,8 @@ export default function VerifyScreen() {
       return;
     }
     setSecondsLeft(RESEND_SECONDS);
-    showToast('Code sent again', 'success');
-  }, [phone, secondsLeft, showToast]);
+    showToast(t('auth.codeResent'), 'success');
+  }, [phone, secondsLeft, showToast, t]);
 
   return (
     <KeyboardAvoidingView
@@ -76,10 +78,10 @@ export default function VerifyScreen() {
       >
         <View style={{ gap: 10 }}>
           <Text className="font-display text-imm-text" style={{ fontSize: 32 }}>
-            Enter the code
+            {t('auth.codeTitle')}
           </Text>
           <Text className="font-nunito text-imm-muted" style={{ fontSize: 15 }}>
-            Sent to {phone}
+            {t('auth.codeSentTo', { phone })}
           </Text>
         </View>
 
@@ -99,8 +101,8 @@ export default function VerifyScreen() {
                 }}
               >
                 {secondsLeft > 0
-                  ? `Resend in 0:${String(secondsLeft).padStart(2, '0')}`
-                  : 'Send a new code'}
+                  ? t('auth.resendIn', { time: `0:${String(secondsLeft).padStart(2, '0')}` })
+                  : t('auth.resend')}
               </Text>
             </Pressable>
           </View>

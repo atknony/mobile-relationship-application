@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { View, Text, Modal, Pressable } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { useUnpairFlow } from '@/hooks/useUnpairFlow';
 import { useToast } from '@/components/ui/Toast';
@@ -10,6 +11,7 @@ export function UnpairInitiator() {
   const [showConfirm, setShowConfirm] = useState(false);
   const { dissolve } = useUnpairFlow();
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const partnerName = useProfileStore((s) => s.partnerProfile?.username);
 
   const handleDissolve = async () => {
@@ -17,7 +19,7 @@ export function UnpairInitiator() {
       await dissolve.mutateAsync();
       setShowConfirm(false);
     } catch {
-      showToast('Something went wrong. Try again.', 'error');
+      showToast(t('common.genericError'), 'error');
     }
   };
 
@@ -36,7 +38,7 @@ export function UnpairInitiator() {
           className="font-nunito"
           style={{ fontSize: 13, color: 'rgba(176,86,107,0.8)' }}
         >
-          {partnerName ? `Disconnect from ${partnerName}` : 'Disconnect'}
+          {partnerName ? t('unpair.disconnectFrom', { name: partnerName }) : t('unpair.disconnect')}
         </Text>
       </Pressable>
 
@@ -60,20 +62,20 @@ export function UnpairInitiator() {
                 className="font-display text-imm-text text-center"
                 style={{ fontSize: 22 }}
               >
-                {partnerName ? `Disconnect from ${partnerName}?` : 'Disconnect?'}
+                {partnerName ? t('unpair.confirmFrom', { name: partnerName }) : t('unpair.confirm')}
               </Text>
               <Text
                 className="font-nunito text-imm-muted text-center"
                 style={{ fontSize: 14 }}
               >
-                You&apos;ll stop receiving each other&apos;s pings. You can pair again later.
+                {t('unpair.confirmBody')}
               </Text>
               <Button onPress={handleDissolve} loading={dissolve.isPending}>
-                Disconnect
+                {t('unpair.disconnect')}
               </Button>
               <Pressable onPress={() => setShowConfirm(false)} className="items-center" style={{ paddingVertical: 8 }}>
                 <Text className="font-nunito" style={{ fontSize: 14, color: colors.muted }}>
-                  Cancel
+                  {t('common.cancel')}
                 </Text>
               </Pressable>
             </View>

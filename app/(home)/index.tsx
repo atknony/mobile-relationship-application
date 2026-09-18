@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { View, Text, Pressable, Image, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
 import { useProfileStore } from '@/stores/profileStore';
 import { usePingStore } from '@/stores/pingStore';
@@ -31,6 +32,7 @@ const HEADER_CIRCLE = {
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const partnerProfile = useProfileStore((s) => s.partnerProfile);
   const pingStatus = usePingStore((s) => s.pingStatus);
   const offlineQueue = usePingStore((s) => s.offlineQueue);
@@ -78,12 +80,12 @@ export default function HomeScreen() {
   // The design collapses the old gallery/camera pair into one button, so the
   // choice moves into a sheet rather than being dropped.
   const handlePickPhoto = useCallback(() => {
-    Alert.alert('Send a moment', undefined, [
-      { text: 'Take photo', onPress: () => void takePhoto() },
-      { text: 'Choose from library', onPress: () => void pickFromLibrary() },
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('home.sendMoment'), undefined, [
+      { text: t('home.takePhoto'), onPress: () => void takePhoto() },
+      { text: t('home.chooseFromLibrary'), onPress: () => void pickFromLibrary() },
+      { text: t('common.cancel'), style: 'cancel' },
     ]);
-  }, [takePhoto, pickFromLibrary]);
+  }, [takePhoto, pickFromLibrary, t]);
 
   return (
     <View
@@ -104,7 +106,9 @@ export default function HomeScreen() {
             </Text>
             {isConnected === false && (
               <Text className="font-nunito text-imm-muted" style={{ fontSize: 11 }}>
-                offline — {offlineQueue.length > 0 ? `${offlineQueue.length} waiting` : 'will send later'}
+                {offlineQueue.length > 0
+                  ? t('home.offlineWaiting', { n: offlineQueue.length })
+                  : t('home.offlineLater')}
               </Text>
             )}
           </View>
@@ -114,7 +118,7 @@ export default function HomeScreen() {
           <Pressable
             onPress={() => router.push('/(home)/thread')}
             hitSlop={12}
-            accessibilityLabel="Ping history"
+            accessibilityLabel={t('home.history')}
             style={HEADER_CIRCLE}
           >
             {/* Three stacked bars */}
@@ -131,7 +135,7 @@ export default function HomeScreen() {
           <Pressable
             onPress={() => router.push('/(home)/settings')}
             hitSlop={12}
-            accessibilityLabel="Settings"
+            accessibilityLabel={t('home.settings')}
             style={HEADER_CIRCLE}
           >
             <View
@@ -163,7 +167,7 @@ export default function HomeScreen() {
             />
             <Pressable onPress={() => setMomentUri(undefined)} hitSlop={8}>
               <Text className="font-nunito text-imm-muted" style={{ fontSize: 12 }}>
-                remove
+                {t('home.removePhoto')}
               </Text>
             </Pressable>
           </View>
@@ -171,7 +175,7 @@ export default function HomeScreen() {
           <Pressable
             onPress={handlePickPhoto}
             hitSlop={8}
-            accessibilityLabel="Add a photo"
+            accessibilityLabel={t('home.addPhoto')}
             style={{
               width: 54,
               height: 54,

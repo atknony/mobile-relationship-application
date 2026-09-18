@@ -6,6 +6,27 @@ const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 // is noise, so let it expire rather than queue indefinitely at the FCM/APNs layer.
 const PUSH_TTL_SECONDS = 900;
 
+// Written in the *recipient's* language (profiles.locale, set by their app),
+// since this runs on the sender's request. Mirrors `pings.*` in the app's
+// src/locales — keep the two in step. Anything unknown, including null from an
+// app that predates the column, falls back to English.
+const PUSH_STRINGS = {
+  en: {
+    title: (name: string) => `${name} is thinking of you 💙`,
+    moment: 'Sent you a moment',
+    someone: 'Your partner',
+  },
+  tr: {
+    title: (name: string) => `${name} seni düşünüyor 💙`,
+    moment: 'Sana bir an gönderdi',
+    someone: 'Partnerin',
+  },
+} as const;
+
+function pushStrings(locale: string | null | undefined) {
+  return locale === 'tr' ? PUSH_STRINGS.tr : PUSH_STRINGS.en;
+}
+
 interface PushTicket {
   status?: 'ok' | 'error';
   id?: string;
@@ -122,17 +143,18 @@ Deno.serve(async (req) => {
     try {
       const { data: people } = await supabase
         .from('profiles')
-        .select('id, username, push_token')
+        .select('id, username, push_token, locale')
         .in('id', [user.id, partnerId]);
 
       const partner = people?.find((p) => p.id === partnerId);
       const sender = people?.find((p) => p.id === user.id);
 
       if (partner?.push_token) {
+        const strings = pushStrings(partner.locale);
         const ticket = await sendExpoPush({
           token: partner.push_token,
-          title: `${sender?.username ?? 'Your partner'} is thinking of you 💙`,
-          body: photoPath ? 'Sent you a moment' : undefined,
+          title: strings.title(sender?.username ?? strings.someone),
+          body: photoPath ? strings.moment : undefined,
           data: { type: 'ping', momentId: moment.id, senderId: user.id },
         });
 

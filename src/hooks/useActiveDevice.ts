@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
 import { supabase } from '@/lib/supabase';
+import { i18n } from '@/lib/i18n';
 import { endReplacedSession, isSessionRevoked, sessionIdOf } from '@/lib/activeDevice';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
@@ -82,7 +83,7 @@ export function useActiveDevice() {
   // the jump to the phone screen.
   useEffect(() => {
     if (!sessionReplaced) return;
-    showToast('You signed in on another phone, so you were signed out here.', 'info');
+    showToast(i18n.t('auth.sessionReplaced'), 'info');
     useAppStore.getState().setSessionReplaced(false);
   }, [sessionReplaced, showToast]);
 }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { InviteCodeDisplay } from '@/components/pair/InviteCodeDisplay';
 import { WaitingForPartner } from '@/components/pair/WaitingForPartner';
@@ -16,13 +17,14 @@ export default function CreateInviteScreen() {
   const { generateCode } = useInviteCode();
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
+  const { t } = useTranslation();
 
   const handleGenerate = async () => {
     try {
       setCode(await generateCode.mutateAsync());
       setShared(false);
     } catch {
-      showToast('Could not generate a code. Try again.', 'error');
+      showToast(t('pair.generateFailed'), 'error');
     }
   };
 
@@ -45,12 +47,12 @@ export default function CreateInviteScreen() {
           <>
             <View style={{ gap: 10 }}>
               <Text className="font-display text-imm-text" style={{ fontSize: 32 }}>
-                Invite your person
+                {t('pair.inviteTitle')}
               </Text>
               <Text className="font-nunito text-imm-muted" style={{ fontSize: 15 }}>
                 {code
-                  ? 'Send them this code. It works once, and expires in 15 minutes.'
-                  : 'Generate a code and share it with them, or enter theirs.'}
+                  ? t('pair.inviteWithCode')
+                  : t('pair.inviteWithoutCode')}
               </Text>
             </View>
 
@@ -60,7 +62,7 @@ export default function CreateInviteScreen() {
               ) : (
                 <View style={{ width: '100%' }}>
                   <Button onPress={handleGenerate} loading={generateCode.isPending}>
-                    Generate my code
+                    {t('pair.generate')}
                   </Button>
                 </View>
               )}
@@ -75,7 +77,7 @@ export default function CreateInviteScreen() {
 
               <View style={{ width: '100%' }}>
                 <Link href="/(pair)/enter-invite" asChild>
-                  <Button variant="secondary">I have their code</Button>
+                  <Button variant="secondary">{t('pair.haveCode')}</Button>
                 </Link>
               </View>
             </View>

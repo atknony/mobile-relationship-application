@@ -55,6 +55,8 @@ src/
     activeDevice.ts         # one account, one phone: claim on sign-in, detect replacement
     signOut.ts              # the single sign-out path — never navigates, see gotcha
     devUsers.ts             # __DEV__ shortcut: "01"/"02" → the seeded test accounts
+    i18n.ts                 # i18next instance, languages, restore/set — see Localization
+  locales/                  # en.ts (source of truth) + tr.ts (typed against it)
   stores/                   # Zustand stores
     authStore.ts            # session, user, sessionLoaded
     profileStore.ts         # ownProfile, partnerProfile, pairedWith, pairId
@@ -80,6 +82,7 @@ src/
     usePingAnimation.ts     # Reanimated hold-to-charge gesture + shared values
     useHaptics.ts           # Haptic pattern wrappers
     useIncomingPing.ts      # Overlay trigger + local notification when backgrounded
+    useProfileLocale.ts     # copies the app language to profiles.locale (for pushes)
     useInviteCode.ts        # generate-invite-code + redeem-invite-code Edge Functions
     useUnpairFlow.ts        # dissolve-pair Edge Function (simplified single-step)
   components/
@@ -123,6 +126,29 @@ Three rules the tokens do not enforce:
 - **Depth comes from `boxShadow` in `src/constants/shadows.ts`, never Android `elevation`**
   or the `shadowColor`/`shadowOpacity`/`shadowRadius` triple — see the gotcha below.
 
+## Localization
+
+`i18next` + `react-i18next`, English and Turkish (`src/lib/i18n.ts`, `src/locales/`). Every
+user-facing string goes through `t()` in components or `i18n.t()` (from `@/lib/i18n`) in
+callbacks, hooks' subscriptions and `lib/` code. Dates use `i18n.language`, never `undefined`.
+
+- **`en.ts` is the source of truth**; `tr.ts` is typed against it, so a missing key fails the
+  typecheck, and `src/lib/__tests__/i18n.test.ts` checks the `{{placeholders}}` match.
+- **The language is per phone**, in AsyncStorage (`imm:language`), defaulting to the phone's
+  language read through Hermes' `Intl` — not `expo-localization`, which is a native module and
+  would need a new dev build. It survives sign-out. The root layout holds `ready` (and the
+  splash) until `restoreLanguage()` has applied it, so a Turkish choice never paints English first.
+- **Pushes are written server-side in the recipient's language.** `useProfileLocale` (in `(home)`)
+  copies the language to `profiles.locale` (`20260918100000`, column-granted); `send-ping` has its
+  own copy of the three push strings — keep them in step with `pings.*`.
+- **No `count` plurals** — i18next needs `Intl.PluralRules`, which Hermes lacks. Pick the key
+  in code (`pings.droppedOne` / `droppedMany`).
+- **No `textTransform: 'uppercase'`.** Android upper-cases with the *device* locale, so an English
+  phone renders Turkish "Nisan" as "NISAN" instead of "NİSAN". Capitalised static strings are
+  written in capitals in the locale files; dynamic ones use `toLocaleUpperCase(i18n.language)`.
+- Turkish copy: informal "sen"; a ping is a *dokunuş*, a photo ping an *an*; never attach a
+  case suffix to a name (it needs vowel harmony per name) — phrase around it.
+
 ## 3-state auth guard
 
 `app/_layout.tsx` moves the user between `(auth)`/`(onboarding)`/`(pair)`/`(home)` groups from a
@@ -163,6 +189,7 @@ which fires on mount and cannot be deferred. Any new autofocusing field needs th
 | avatar_url | text | nullable |
 | partner_id | uuid | nullable — partner's user_id |
 | push_token | text | nullable — Expo push token |
+| locale | text | nullable — app language ('en'/'tr'), so `send-ping` writes pushes in it; null = English |
 | quiet_hours_start | smallint | nullable — minutes since local midnight; null = off |
 | quiet_hours_end | smallint | nullable |
 | created_at | timestamptz | |

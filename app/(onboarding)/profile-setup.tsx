@@ -9,6 +9,7 @@ import {
   type TextInput as RNTextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/lib/supabase';
 import { uploadJpeg } from '@/lib/uploadImage';
 import { newAvatarPath, pickAvatar } from '@/lib/avatar';
@@ -29,6 +30,7 @@ export default function ProfileSetupScreen() {
   const setOwnProfile = useProfileStore((s) => s.setOwnProfile);
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const inputRef = useRef<RNTextInput>(null);
   const isRevealed = useAppStore((s) => s.isRevealed);
 
@@ -46,7 +48,7 @@ export default function ProfileSetupScreen() {
   const handleSave = async () => {
     const name = username.trim();
     if (!name || !userId) {
-      showToast('Enter a name to continue', 'error');
+      showToast(t('onboarding.nameRequired'), 'error');
       return;
     }
 
@@ -60,7 +62,7 @@ export default function ProfileSetupScreen() {
         avatarPath = await uploadJpeg('avatars', newAvatarPath(userId), avatarUri);
       } catch {
         // A missing photo should not block getting into the app.
-        showToast('Could not save your photo — carrying on without it.', 'info');
+        showToast(t('onboarding.photoFailed'), 'info');
       }
     }
 
@@ -72,7 +74,7 @@ export default function ProfileSetupScreen() {
     setLoading(false);
 
     if (error) {
-      showToast('Could not save profile. Try again.', 'error');
+      showToast(t('onboarding.saveFailed'), 'error');
       return;
     }
 
@@ -91,17 +93,17 @@ export default function ProfileSetupScreen() {
       >
         <View style={{ gap: 10 }}>
           <Text className="font-display text-imm-text" style={{ fontSize: 32 }}>
-            What should they call you?
+            {t('onboarding.title')}
           </Text>
           <Text className="font-nunito text-imm-muted" style={{ fontSize: 15 }}>
-            This is the only name in the app.
+            {t('onboarding.subtitle')}
           </Text>
         </View>
 
         <View className="flex-row items-end" style={{ gap: 14 }}>
           <Pressable
             onPress={handlePickAvatar}
-            accessibilityLabel="Choose a photo"
+            accessibilityLabel={t('onboarding.choosePhoto')}
             style={{
               width: 64,
               height: 64,
@@ -126,7 +128,7 @@ export default function ProfileSetupScreen() {
             <TextInput
               value={username}
               onChangeText={setUsername}
-              placeholder="Your name"
+              placeholder={t('onboarding.namePlaceholder')}
               maxLength={32}
               ref={inputRef}
             />
@@ -134,7 +136,7 @@ export default function ProfileSetupScreen() {
         </View>
 
         <Button onPress={handleSave} loading={loading}>
-          Continue
+          {t('common.continue')}
         </Button>
       </View>
     </KeyboardAvoidingView>

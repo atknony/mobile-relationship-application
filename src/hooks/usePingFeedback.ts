@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { subscribeToPingQueue } from '@/lib/pingQueue';
+import { i18n } from '@/lib/i18n';
 import { usePingStore } from '@/stores/pingStore';
 import { useToast } from '@/components/ui/Toast';
 import { useHaptics } from '@/hooks/useHaptics';
@@ -42,8 +43,8 @@ export function usePingFeedback() {
             errorHaptic();
             showToast(
               event.count === 1
-                ? "A ping couldn't be delivered."
-                : `${event.count} pings couldn't be delivered.`,
+                ? i18n.t('pings.droppedOne')
+                : i18n.t('pings.droppedMany', { n: event.count }),
               'error'
             );
             break;

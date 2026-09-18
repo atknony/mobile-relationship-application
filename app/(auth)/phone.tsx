@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '@/lib/supabase';
 import { isDevShorthand, signInDevUser } from '@/lib/devUsers';
@@ -23,6 +24,7 @@ export default function PhoneScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const inputRef = useRef<RNTextInput>(null);
   const isRevealed = useAppStore((s) => s.isRevealed);
 
@@ -49,7 +51,7 @@ export default function PhoneScreen() {
     }
 
     if (!cleaned.startsWith('+') || cleaned.length < 8) {
-      showToast('Enter your phone number with country code (e.g. +1...)', 'error');
+      showToast(t('auth.phoneInvalid'), 'error');
       return;
     }
 
@@ -89,28 +91,28 @@ export default function PhoneScreen() {
             className="font-nunito text-imm-muted"
             style={{ fontSize: 17, maxWidth: 270, lineHeight: 24 }}
           >
-            A quiet line between the two of you. Nothing else lives here.
+            {t('auth.tagline')}
           </Text>
         </View>
 
         <View style={{ gap: 16 }}>
           <TextInput
-            label="PHONE NUMBER"
+            label={t('auth.phoneLabel')}
             value={phone}
             onChangeText={setPhone}
             keyboardType="phone-pad"
-            placeholder="+1 234 567 8900"
+            placeholder={t('auth.phonePlaceholder')}
             ref={inputRef}
           />
           <Button onPress={handleSendOtp} loading={loading}>
-            Continue
+            {t('common.continue')}
           </Button>
           <Text className="font-nunito text-imm-muted text-center" style={{ fontSize: 12 }}>
-            We use it once, to find your person.
+            {t('auth.phonePrivacy')}
           </Text>
           {__DEV__ ? (
             <Text className="font-nunito text-imm-muted text-center" style={{ fontSize: 11, opacity: 0.7 }}>
-              dev: enter 01 or 02 for the seeded test accounts
+              {t('auth.devHint')}
             </Text>
           ) : null}
         </View>

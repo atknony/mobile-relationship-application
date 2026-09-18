@@ -1,5 +1,6 @@
 import { View, Text } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { RadialGlow } from '@/components/ping/vessel/RadialGlow';
 import { gradients } from '@/constants/colors';
@@ -21,6 +22,7 @@ const WASH_STOPS = [
  * guard takes over the moment partner_id lands. This is only the picture.
  */
 export function WaitingForPartner({ onResend }: { onResend: () => void }) {
+  const { t } = useTranslation();
   return (
     <View className="items-center" style={{ gap: 26 }}>
       <View
@@ -73,18 +75,18 @@ export function WaitingForPartner({ onResend }: { onResend: () => void }) {
 
       <View className="items-center" style={{ gap: 10 }}>
         <Text className="font-display text-imm-text text-center" style={{ fontSize: 28 }}>
-          Waiting for them
+          {t('pair.waitingTitle')}
         </Text>
         <Text
           className="font-nunito text-imm-muted text-center"
           style={{ fontSize: 15, maxWidth: 250 }}
         >
-          The moment they enter your code, this becomes the only screen you need.
+          {t('pair.waitingBody')}
         </Text>
       </View>
 
       <Button variant="secondary" onPress={onResend}>
-        Send the code again
+        {t('pair.sendAgain')}
       </Button>
     </View>
   );

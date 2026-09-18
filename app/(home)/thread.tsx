@@ -1,5 +1,6 @@
 import { View, Text, FlatList } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useMomentsThread, type ThreadRow } from '@/hooks/useMomentsThread';
 import { BackButton } from '@/components/ui/BackButton';
 import { ThreadDayDivider, ThreadPingRow } from '@/components/thread/ThreadRow';
@@ -37,10 +38,11 @@ function Sparkline({ days }: { days: { mine: number; theirs: number }[] }) {
  */
 export default function ThreadScreen() {
   const insets = useSafeAreaInsets();
+  const { t, i18n } = useTranslation();
   const partnerProfile = useProfileStore((s) => s.partnerProfile);
   const { rows, sparkline, isLoading, error } = useMomentsThread();
 
-  const month = new Date().toLocaleDateString(undefined, { month: 'long' });
+  const month = new Date().toLocaleDateString(i18n.language, { month: 'long' });
 
   const renderRow = ({ item }: { item: ThreadRow }) =>
     item.kind === 'day' ? (
@@ -86,7 +88,7 @@ export default function ThreadScreen() {
               className="font-nunito text-imm-muted text-center"
               style={{ fontSize: 14, paddingTop: 40 }}
             >
-              {error ? 'Could not load your pings.' : 'No pings yet.'}
+              {error ? t('thread.loadFailed') : t('thread.empty')}
             </Text>
           )
         }

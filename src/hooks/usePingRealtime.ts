@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { preloadImage } from '@/lib/preloadImage';
+import { i18n } from '@/lib/i18n';
 import { useAuthStore } from '@/stores/authStore';
 import { useProfileStore } from '@/stores/profileStore';
 import { usePingStore } from '@/stores/pingStore';
@@ -54,7 +55,7 @@ export function usePingRealtime() {
               id: row.id,
               fromUserId: row.sender_id,
               fromDisplayName:
-                useProfileStore.getState().partnerProfile?.username ?? 'Your partner',
+                useProfileStore.getState().partnerProfile?.username ?? i18n.t('common.yourPartner'),
               momentPath: row.photo_path ?? undefined,
               receivedAt: Date.now(),
             });

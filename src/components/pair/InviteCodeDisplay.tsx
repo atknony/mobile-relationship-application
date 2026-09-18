@@ -1,5 +1,6 @@
 import { View, Text, Share } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { shadows } from '@/constants/shadows';
@@ -15,16 +16,17 @@ export function InviteCodeDisplay({
   onShared?: () => void;
 }) {
   const { showToast } = useToast();
+  const { t } = useTranslation();
 
   const handleCopy = async () => {
     await Clipboard.setStringAsync(code);
-    showToast('Code copied', 'success');
+    showToast(t('pair.copied'), 'success');
     onShared?.();
   };
 
   const handleShare = async () => {
     const result = await Share.share({
-      message: `Join me on Imm — my code is ${code}`,
+      message: t('pair.shareMessage', { code }),
     });
     if (result.action === Share.sharedAction) onShared?.();
   };
@@ -58,11 +60,11 @@ export function InviteCodeDisplay({
       <View className="flex-row" style={{ gap: 10 }}>
         <View style={{ flex: 1 }}>
           <Button variant="quiet" onPress={handleCopy}>
-            Copy
+            {t('pair.copy')}
           </Button>
         </View>
         <View style={{ flex: 1 }}>
-          <Button onPress={handleShare}>Share</Button>
+          <Button onPress={handleShare}>{t('pair.share')}</Button>
         </View>
       </View>
     </View>

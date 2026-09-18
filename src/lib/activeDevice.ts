@@ -1,5 +1,6 @@
 import { AuthSessionMissingError, isAuthApiError } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { i18n } from '@/lib/i18n';
 import { queryClient } from '@/lib/queryClient';
 import { useAppStore } from '@/stores/appStore';
 
@@ -46,7 +47,7 @@ export async function claimActiveDevice(): Promise<string | null> {
   const { error } = await supabase.rpc('claim_active_device');
   if (error) {
     await supabase.auth.signOut({ scope: 'local' });
-    return 'Could not finish signing in. Try again.';
+    return i18n.t('auth.claimFailed');
   }
   // The claim clears profiles.push_token so the old phone stops receiving
   // pushes. If this phone's registration already ran against the cached

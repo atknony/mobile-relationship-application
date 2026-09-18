@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { Notifications } from '@/lib/notifications';
 import { supabase } from '@/lib/supabase';
+import { i18n } from '@/lib/i18n';
 import { useAuthStore } from '@/stores/authStore';
 import { useProfileStore } from '@/stores/profileStore';
 import { usePingStore } from '@/stores/pingStore';
@@ -88,7 +89,7 @@ export function usePushRegistration() {
       setIncomingPing({
         id: String(data.momentId ?? Date.now()),
         fromUserId: String(data.senderId ?? partner?.id ?? ''),
-        fromDisplayName: partner?.username ?? 'Your partner',
+        fromDisplayName: partner?.username ?? i18n.t('common.yourPartner'),
         receivedAt: Date.now(),
       });
     };

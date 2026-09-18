@@ -1,5 +1,6 @@
 import { Modal, View, Text, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useIncomingPing } from '@/hooks/useIncomingPing';
 import { useSendPing } from '@/hooks/useSendPing';
 import { Avatar } from '@/components/ui/Avatar';
@@ -25,6 +26,7 @@ export function IncomingPingOverlay() {
   const { incomingPing, dismiss } = useIncomingPing();
   const partnerProfile = useProfileStore((s) => s.partnerProfile);
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const { sendPing } = useSendPing();
 
   if (!incomingPing) return null;
@@ -98,13 +100,13 @@ export function IncomingPingOverlay() {
               {incomingPing.fromDisplayName}
             </Text>
             <Text className="font-nunito text-imm-muted text-center" style={{ fontSize: 15 }}>
-              is thinking of you
+              {t('pings.thinkingOfYou')}
             </Text>
             <Text
               className="font-nunito text-imm-muted"
-              style={{ fontSize: 12, letterSpacing: 1.7, textTransform: 'uppercase' }}
+              style={{ fontSize: 12, letterSpacing: 1.7 }}
             >
-              just now
+              {t('pings.justNow')}
             </Text>
           </View>
 

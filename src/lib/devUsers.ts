@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { i18n } from '@/lib/i18n';
 import { claimActiveDevice } from '@/lib/activeDevice';
 
 /**
@@ -27,7 +28,7 @@ export function isDevShorthand(input: string): boolean {
 /** Signs in one of the seeded accounts. Returns an error message, or null. */
 export async function signInDevUser(input: string): Promise<string | null> {
   const user = DEV_USERS[input];
-  if (!__DEV__ || !user) return 'Unknown test user.';
+  if (!__DEV__ || !user) return i18n.t('auth.devUnknownUser');
 
   const { error } = await supabase.auth.signInWithPassword(user);
   if (error) return error.message;

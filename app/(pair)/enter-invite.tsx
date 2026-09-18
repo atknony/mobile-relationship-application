@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { View, Text, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
+import { useTranslation } from 'react-i18next';
 import { BackButton } from '@/components/ui/BackButton';
 import { CodeInput, type CodeInputHandle } from '@/components/ui/CodeInput';
 import { useInviteCode } from '@/hooks/useInviteCode';
@@ -13,6 +14,7 @@ export default function EnterInviteScreen() {
   const { redeemCode } = useInviteCode();
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const inputRef = useRef<CodeInputHandle>(null);
 
   const handleComplete = async (code: string) => {
@@ -20,7 +22,7 @@ export default function EnterInviteScreen() {
       await redeemCode.mutateAsync(code);
       // The auth guard takes over once partner_id lands.
     } catch {
-      showToast('Invalid or expired code. Try again.', 'error');
+      showToast(t('pair.enterInvalid'), 'error');
     }
   };
 
@@ -28,7 +30,7 @@ export default function EnterInviteScreen() {
     const text = await Clipboard.getStringAsync();
     const clean = text.toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (clean.length < 6) {
-      showToast('No code on your clipboard.', 'info');
+      showToast(t('pair.clipboardEmpty'), 'info');
       return;
     }
     inputRef.current?.fill(clean);
@@ -57,10 +59,10 @@ export default function EnterInviteScreen() {
         <View className="flex-1 justify-center" style={{ gap: 32 }}>
           <View style={{ gap: 10 }}>
             <Text className="font-display text-imm-text" style={{ fontSize: 32 }}>
-              Their code
+              {t('pair.enterTitle')}
             </Text>
             <Text className="font-nunito text-imm-muted" style={{ fontSize: 15 }}>
-              Six characters, from their phone.
+              {t('pair.enterSubtitle')}
             </Text>
           </View>
 
@@ -91,7 +93,7 @@ export default function EnterInviteScreen() {
                   />
                 </View>
                 <Text className="font-nunito text-imm-muted" style={{ fontSize: 13 }}>
-                  Paste from clipboard
+                  {t('pair.paste')}
                 </Text>
               </Pressable>
             </View>

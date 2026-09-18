@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { i18n } from '@/lib/i18n';
 import { useToast } from '@/components/ui/Toast';
 import { useProfileStore } from '@/stores/profileStore';
 import { usePingStore } from '@/stores/pingStore';
@@ -87,7 +88,9 @@ export function usePairRealtime() {
           void queryClient.invalidateQueries({ queryKey: ['profile'] });
 
           showToast(
-            partnerName ? `${partnerName} disconnected.` : 'You are no longer connected.',
+            partnerName
+              ? i18n.t('unpair.partnerLeft', { name: partnerName })
+              : i18n.t('unpair.noLongerConnected'),
             'info'
           );
         }

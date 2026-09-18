@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Pressable, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { signOut } from '@/lib/signOut';
 import { useToast } from '@/components/ui/Toast';
 import { colors } from '@/constants/colors';
@@ -13,7 +14,8 @@ import { colors } from '@/constants/colors';
  * a visible flicker at best, a loop at worst. Dropping the session is the only
  * honest way to reach that screen again.
  */
-export function SignOutLink({ label = 'Sign out' }: { label?: string }) {
+export function SignOutLink({ label }: { label?: string }) {
+  const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
   const { showToast } = useToast();
 
@@ -41,7 +43,7 @@ export function SignOutLink({ label = 'Sign out' }: { label?: string }) {
       style={{ paddingVertical: 10, opacity: busy ? 0.5 : 1 }}
     >
       <Text className="font-nunito" style={{ fontSize: 14, color: colors.muted }}>
-        {label}
+        {label ?? t('common.signOut')}
       </Text>
     </Pressable>
   );

@@ -1,5 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import { useProfileStore } from '@/stores/profileStore';
@@ -21,12 +23,19 @@ export type ThreadRow =
   | { kind: 'day'; key: string; label: string }
   | { kind: 'ping'; key: string; ping: ThreadPing };
 
-function dayLabel(date: Date, now: Date): string {
+// Upper-cased here, in the app's language, rather than with textTransform —
+// Android applies that with the device locale, which gets Turkish "i" wrong
+// ("Nisan" must become "NİSAN", not "NISAN").
+function dayLabel(date: Date, now: Date, t: TFunction, language: string): string {
   const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   const diffDays = Math.round((startOf(now) - startOf(date)) / 86_400_000);
-  if (diffDays === 0) return 'today';
-  if (diffDays === 1) return 'yesterday';
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  const label =
+    diffDays === 0
+      ? t('thread.today')
+      : diffDays === 1
+        ? t('thread.yesterday')
+        : date.toLocaleDateString(language, { month: 'short', day: 'numeric' });
+  return label.toLocaleUpperCase(language);
 }
 
 function dayKey(date: Date): string {
@@ -68,6 +77,8 @@ export function useMomentsThread() {
   const incomingPing = usePingStore((s) => s.incomingPing);
   const offlineQueue = usePingStore((s) => s.offlineQueue);
   const queryClient = useQueryClient();
+  const { t, i18n } = useTranslation();
+  const language = i18n.language;
 
   const query = useQuery(momentsQueryOptions(pairId));
 
@@ -104,12 +115,12 @@ export function useMomentsThread() {
       const key = dayKey(date);
       if (key !== currentDay) {
         currentDay = key;
-        out.push({ kind: 'day', key: `day-${key}`, label: dayLabel(date, now) });
+        out.push({ kind: 'day', key: `day-${key}`, label: dayLabel(date, now, t, language) });
       }
       out.push({ kind: 'ping', key: ping.id, ping });
     }
     return out;
-  }, [query.data, offlineQueue, userId]);
+  }, [query.data, offlineQueue, userId, t, language]);
 
   /** Counts for the last six days, oldest first — the header sparkline. */
   const sparkline = useMemo(() => {

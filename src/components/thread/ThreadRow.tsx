@@ -1,11 +1,22 @@
 import { View, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { MomentPhoto } from '@/components/ui/MomentPhoto';
 import { colors } from '@/constants/colors';
 import { shadows } from '@/constants/shadows';
 import type { ThreadPing } from '@/hooks/useMomentsThread';
 
-function timeLabel(ms: number) {
-  return new Date(ms).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+function PingTime({ ping }: { ping: ThreadPing }) {
+  const { t, i18n } = useTranslation();
+  return (
+    <Text className="font-nunito text-imm-muted" style={{ fontSize: 12 }}>
+      {ping.queued
+        ? t('thread.queued')
+        : new Date(ping.createdAt).toLocaleTimeString(i18n.language, {
+            hour: 'numeric',
+            minute: '2-digit',
+          })}
+    </Text>
+  );
 }
 
 /** Colour carries who sent what throughout the app: warm is you, cool is them. */
@@ -35,13 +46,14 @@ function DotChip({ mine, queued }: { mine: boolean; queued?: boolean }) {
 function SenderName({ mine, name }: { mine: boolean; name?: string | null }) {
   // Their name is set in Newsreader italic, yours is plain — the typeface
   // itself distinguishes the two people.
+  const { t } = useTranslation();
   return mine ? (
     <Text className="font-nunito text-imm-text" style={{ fontSize: 15 }}>
-      you
+      {t('thread.you')}
     </Text>
   ) : (
     <Text className="font-display text-imm-text" style={{ fontSize: 15 }}>
-      {name ?? 'them'}
+      {name ?? t('thread.them')}
     </Text>
   );
 }
@@ -60,9 +72,7 @@ export function ThreadPingRow({
         <DotChip mine={ping.mine} queued={ping.queued} />
         <SenderName mine={ping.mine} name={partnerName} />
         <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(45,27,105,0.07)' }} />
-        <Text className="font-nunito text-imm-muted" style={{ fontSize: 12 }}>
-          {ping.queued ? 'queued' : timeLabel(ping.createdAt)}
-        </Text>
+        <PingTime ping={ping} />
       </View>
     );
   }
@@ -73,9 +83,7 @@ export function ThreadPingRow({
         <DotChip mine={ping.mine} queued={ping.queued} />
         <SenderName mine={ping.mine} name={partnerName} />
         <View style={{ flex: 1 }} />
-        <Text className="font-nunito text-imm-muted" style={{ fontSize: 12 }}>
-          {ping.queued ? 'queued' : timeLabel(ping.createdAt)}
-        </Text>
+        <PingTime ping={ping} />
       </View>
       <MomentPhoto
         path={ping.photoPath}
@@ -92,7 +100,7 @@ export function ThreadDayDivider({ label }: { label: string }) {
     <View className="flex-row items-center" style={{ gap: 10, paddingTop: 6 }}>
       <Text
         className="font-nunito text-imm-muted"
-        style={{ fontSize: 11, letterSpacing: 1.8, textTransform: 'uppercase' }}
+        style={{ fontSize: 11, letterSpacing: 1.8 }}
       >
         {label}
       </Text>

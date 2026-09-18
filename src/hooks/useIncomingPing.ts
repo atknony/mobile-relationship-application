@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
 import { Notifications } from '@/lib/notifications';
+import { i18n } from '@/lib/i18n';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { usePingStore } from '@/stores/pingStore';
@@ -32,8 +33,8 @@ export function useIncomingPing() {
     if (AppState.currentState !== 'active' && !hasPush) {
       void Notifications?.scheduleNotificationAsync({
         content: {
-          title: `${incomingPing.fromDisplayName} is thinking of you`,
-          body: incomingPing.momentPath ? 'Sent you a moment' : undefined,
+          title: i18n.t('pings.notificationTitle', { name: incomingPing.fromDisplayName }),
+          body: incomingPing.momentPath ? i18n.t('pings.sentMoment') : undefined,
           sound: true,
         },
         trigger: null, // fire immediately

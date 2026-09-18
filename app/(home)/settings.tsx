@@ -2,13 +2,16 @@ import { useState } from 'react';
 import { View, Text, Pressable, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { usePreferences } from '@/hooks/usePreferences';
+import { currentLanguage, LANGUAGE_NAMES, LANGUAGES, setLanguage } from '@/lib/i18n';
 import { changeAvatar, pickAvatar } from '@/lib/avatar';
 import { useToast } from '@/components/ui/Toast';
 import { useProfileStore } from '@/stores/profileStore';
 import { useAuthStore } from '@/stores/authStore';
 import { Avatar } from '@/components/ui/Avatar';
 import { Toggle } from '@/components/ui/Toggle';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { SignOutLink } from '@/components/ui/SignOutLink';
 import { UnpairInitiator } from '@/components/unpair/UnpairInitiator';
 import { colors } from '@/constants/colors';
@@ -20,6 +23,9 @@ const CARD = {
 } as const;
 
 const HAIRLINE = { height: 1, backgroundColor: 'rgba(45,27,105,0.07)' } as const;
+
+// Each language in its own name — the one you can read is the one you want.
+const LANGUAGE_OPTIONS = LANGUAGES.map((value) => ({ value, label: LANGUAGE_NAMES[value] }));
 
 function CloseGlyph() {
   return (
@@ -70,6 +76,7 @@ export default function SettingsScreen() {
   const phone = useAuthStore((s) => s.user?.phone);
   const { vibrate, setVibrate } = usePreferences();
   const { showToast } = useToast();
+  const { t, i18n } = useTranslation();
   const [uploading, setUploading] = useState(false);
   // The photo as picked, kept on screen after the save too: it is the same
   // image, and swapping to the signed copy would blank the circle while it
@@ -88,14 +95,14 @@ export default function SettingsScreen() {
       await changeAvatar(ownProfile.id, uri);
     } catch {
       setPickedUri(previousUri);
-      showToast('Could not save your photo. Try again.', 'error');
+      showToast(t('settings.photoFailed'), 'error');
     } finally {
       setUploading(false);
     }
   };
 
   const since = pairedSince
-    ? new Date(pairedSince).toLocaleDateString(undefined, { day: 'numeric', month: 'long' })
+    ? new Date(pairedSince).toLocaleDateString(i18n.language, { day: 'numeric', month: 'long' })
     : null;
 
   return (
@@ -110,12 +117,12 @@ export default function SettingsScreen() {
     >
       <View className="flex-row items-center justify-between">
         <Text className="font-display text-imm-text" style={{ fontSize: 28 }}>
-          Settings
+          {t('settings.title')}
         </Text>
         <Pressable
           onPress={() => router.back()}
           hitSlop={12}
-          accessibilityLabel="Close"
+          accessibilityLabel={t('common.close')}
           style={{
             width: 34,
             height: 34,
@@ -137,7 +144,7 @@ export default function SettingsScreen() {
             onPress={handleChangePhoto}
             disabled={uploading}
             accessibilityRole="button"
-            accessibilityLabel="Change profile picture"
+            accessibilityLabel={t('settings.changePhoto')}
           >
             <Avatar
               uri={ownProfile?.avatar_url}
@@ -180,10 +187,10 @@ export default function SettingsScreen() {
                 style={{ fontSize: 13, color: colors.emberText, opacity: uploading ? 0.5 : 1 }}
               >
                 {uploading
-                  ? 'Saving photo…'
+                  ? t('settings.savingPhoto')
                   : ownProfile?.avatar_url
-                    ? 'Change profile picture'
-                    : 'Add profile picture'}
+                    ? t('settings.changePhoto')
+                    : t('settings.addPhoto')}
               </Text>
             </Pressable>
           </View>
@@ -200,7 +207,7 @@ export default function SettingsScreen() {
                 </Text>
                 {since ? (
                   <Text className="font-nunito text-imm-muted" style={{ fontSize: 12 }}>
-                    together since {since}
+                    {t('settings.togetherSince', { date: since })}
                   </Text>
                 ) : null}
               </View>
@@ -214,8 +221,17 @@ export default function SettingsScreen() {
         {/* Quiet hours and "keep photo moments" are deliberately absent: the
             first needs server-side push gating to mean anything, the second was
             never built. Only settings that actually do something live here. */}
-        <PreferenceRow label="Vibrate on arrival">
-          <Toggle value={vibrate} onChange={setVibrate} label="Vibrate on arrival" />
+        <PreferenceRow label={t('settings.language')}>
+          <SegmentedControl
+            options={LANGUAGE_OPTIONS}
+            value={currentLanguage()}
+            onChange={(next) => void setLanguage(next)}
+            label={t('settings.language')}
+          />
+        </PreferenceRow>
+        <View style={HAIRLINE} />
+        <PreferenceRow label={t('settings.vibrate')}>
+          <Toggle value={vibrate} onChange={setVibrate} label={t('settings.vibrate')} />
         </PreferenceRow>
       </View>
 
