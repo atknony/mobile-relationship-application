@@ -56,6 +56,7 @@ src/
     signOut.ts              # the single sign-out path — never navigates, see gotcha
     devUsers.ts             # __DEV__ shortcut: "01"/"02" → the seeded test accounts
     i18n.ts                 # i18next instance, languages, restore/set — see Localization
+    languageTransition.ts   # switchLanguage(): fade out, change, fade in
   locales/                  # en.ts (source of truth) + tr.ts (typed against it)
   stores/                   # Zustand stores
     authStore.ts            # session, user, sessionLoaded
@@ -89,10 +90,12 @@ src/
     ui/                     # Button, TextInput, Avatar, LoadingSpinner, Toast,
                             #   BackButton (in-group back, with a fallback),
                             #   SignOutLink (the only way out of a guarded group),
-                            #   MomentPhoto (ping photo: fixed slot, fades in on decode)
+                            #   MomentPhoto (ping photo: fixed slot, fades in on decode),
+                            #   BottomSheet (slides up over a dimmed backdrop)
     ping/                   # PingButton, PingRipple, PingParticles, IncomingPingOverlay
     pair/                   # InviteCodeDisplay, InviteCodeInput, PairCelebrationOverlay
     unpair/                 # UnpairInitiator, UnpairPendingBanner (banner is stub)
+    settings/               # LanguageSheet
   types/
     database.ts             # Supabase table types (hand-written — see gotcha below)
     ping.ts                 # QueuedPing, IncomingPing, PingStatus
@@ -146,8 +149,16 @@ callbacks, hooks' subscriptions and `lib/` code. Dates use `i18n.language`, neve
 - **No `textTransform: 'uppercase'`.** Android upper-cases with the *device* locale, so an English
   phone renders Turkish "Nisan" as "NISAN" instead of "NİSAN". Capitalised static strings are
   written in capitals in the locale files; dynamic ones use `toLocaleUpperCase(i18n.language)`.
-- Turkish copy: informal "sen"; a ping is a *dokunuş*, a photo ping an *an*; never attach a
-  case suffix to a name (it needs vowel harmony per name) — phrase around it.
+- **Choosing a language** is a Settings row that opens `LanguageSheet` (a `BottomSheet` listing
+  `LANGUAGES`), so a new language is a new locale file plus an entry in `LANGUAGES`/
+  `LANGUAGE_NAMES` and a `languages.*` name in every locale — no UI change.
+- **Switch through `switchLanguage()`** (`src/lib/languageTransition.ts`), not `setLanguage()`,
+  anywhere a person is watching: it fades the root navigator out (`appContentOpacity`, bound in
+  `app/_layout.tsx`), changes the language unseen and fades back in. The fade-out outlasts the
+  sheet's close because Modals are separate windows the fade cannot reach.
+- Turkish copy: informal "sen"; the product terms stay English — "ping", "photo ping"
+  (*dokunuş* only for the literal touch); never attach a case suffix to a name or to those
+  terms — phrase around it.
 
 ## 3-state auth guard
 
@@ -402,9 +413,10 @@ to emit one of those events or the thread will silently go stale again.
   locally with `npx expo prebuild -p android --clean && npm run android` (or in the cloud with
   `eas build -p android --profile development`); iOS only in the cloud. Credentials live with
   Expo, not Supabase — `send-ping` goes through the Expo push API: an FCM V1 service-account key
-  and an APNs key are uploaded with `eas credentials`. `google-services.json` is committed
-  (public identifiers) and wired in by `app.config.js` only when it exists, so a checkout
-  without it still prebuilds (just without FCM); service-account keys are gitignored.
+  and an APNs key are uploaded with `eas credentials`. **`google-services.json` is never
+  committed** (gitignored). `app.config.js` takes it from the `GOOGLE_SERVICES_JSON` EAS file
+  variable on cloud builds, else from the project root on local builds, else leaves it out —
+  so a checkout without it still prebuilds, just without FCM. Service-account keys are gitignored too.
 - **A ping must announce itself once.** With a token, a ping reaches the phone twice — the
   push and Realtime. The foreground `setNotificationHandler` (`app/_layout.tsx`) suppresses
   ping banners because the overlay is already up, and `useIncomingPing` schedules its local

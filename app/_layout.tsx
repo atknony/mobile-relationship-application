@@ -6,6 +6,7 @@ import type { Session } from '@supabase/supabase-js';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { QueryClientProvider } from '@tanstack/react-query';
 import {
   Nunito_400Regular,
@@ -18,6 +19,7 @@ import {
 import { Newsreader_400Regular_Italic } from '@expo-google-fonts/newsreader';
 
 import { restoreLanguage } from '@/lib/i18n';
+import { appContentOpacity } from '@/lib/languageTransition';
 import { queryClient } from '@/lib/queryClient';
 import { initPingQueue } from '@/lib/pingQueue';
 import { pruneImageCache } from '@/lib/imageCache';
@@ -100,6 +102,9 @@ function RootNavigator() {
   // is applied — otherwise a Turkish choice would paint a frame of the phone's
   // language first. restoreLanguage never rejects.
   const [languageRestored, setLanguageRestored] = useState(false);
+  // Driven by switchLanguage(): the app fades out and back in around a
+  // language change instead of every string snapping at once.
+  const contentFade = useAnimatedStyle(() => ({ opacity: appContentOpacity.value }));
   useEffect(() => {
     void restoreLanguage().then(() => setLanguageRestored(true));
   }, []);
@@ -212,7 +217,9 @@ function RootNavigator() {
   }, [ready, session, ownProfile, pairedWith, segments, router]);
 
   return (
-    <>
+    // colors.bg underneath, so a language fade dips to the app's ground colour
+    // rather than to whatever the window happens to be.
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       {/* The navigator has to be mounted from the first render or expo-router
           throws "Attempted to navigate before mounting the Root Layout
           component" — so it is covered rather than withheld. colors.bg is the
@@ -222,15 +229,17 @@ function RootNavigator() {
           should be able to land on a screen that is still being decided.
           A Stack rather than a bare <Slot /> only so the guard's replace()
           between groups can animate; a Slot swaps them in a hard cut. */}
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: colors.bg },
-          ...(animateGroupChanges ? stateChange : { animation: 'none' }),
-        }}
-      />
+      <Animated.View style={[{ flex: 1 }, contentFade]}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: colors.bg },
+            ...(animateGroupChanges ? stateChange : { animation: 'none' }),
+          }}
+        />
+      </Animated.View>
       {!revealed && <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg }]} />}
-    </>
+    </View>
   );
 }
 

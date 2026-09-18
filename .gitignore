@@ -41,7 +41,9 @@ yarn-error.*
 /ios
 /android
 
-# Firebase service-account keys (FCM V1) — uploaded to EAS, never committed.
-# google-services.json is public identifiers and IS committed.
+# Firebase — never committed. google-services.json is read from the project
+# root for local builds and from the GOOGLE_SERVICES_JSON EAS file variable for
+# cloud builds (see app.config.js). Service-account keys (FCM V1) go to EAS only.
+google-services.json
 *firebase-adminsdk*.json
 service-account*.json

@@ -29,6 +29,15 @@ export const UNPAIR_EXPIRY_HOURS = 24;
 // on the right route group. Settling takes a frame or two, so this is only
 // reached if the guard and the router disagree — see the comment at its use.
 export const STARTUP_SETTLE_TIMEOUT_MS = 3000;
+// Bottom sheets rise a little slower than they fall away, like the system's.
+export const SHEET_OPEN_MS = 260;
+export const SHEET_CLOSE_MS = 200;
+// Changing language fades the app to the ground colour, swaps every string
+// while nothing is visible, then fades back. The fade-out is longer than the
+// sheet's close so the sheet (its own window, which the fade cannot reach) is
+// gone before its text changes.
+export const LANGUAGE_FADE_OUT_MS = 220;
+export const LANGUAGE_FADE_IN_MS = 260;
 
 export const CHARGE_EASING = Easing.out(Easing.quad);
 

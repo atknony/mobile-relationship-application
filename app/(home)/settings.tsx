@@ -4,14 +4,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { usePreferences } from '@/hooks/usePreferences';
-import { currentLanguage, LANGUAGE_NAMES, LANGUAGES, setLanguage } from '@/lib/i18n';
+import { currentLanguage, LANGUAGE_NAMES } from '@/lib/i18n';
 import { changeAvatar, pickAvatar } from '@/lib/avatar';
 import { useToast } from '@/components/ui/Toast';
 import { useProfileStore } from '@/stores/profileStore';
 import { useAuthStore } from '@/stores/authStore';
 import { Avatar } from '@/components/ui/Avatar';
 import { Toggle } from '@/components/ui/Toggle';
-import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import { LanguageSheet } from '@/components/settings/LanguageSheet';
 import { SignOutLink } from '@/components/ui/SignOutLink';
 import { UnpairInitiator } from '@/components/unpair/UnpairInitiator';
 import { colors } from '@/constants/colors';
@@ -24,8 +24,20 @@ const CARD = {
 
 const HAIRLINE = { height: 1, backgroundColor: 'rgba(45,27,105,0.07)' } as const;
 
-// Each language in its own name — the one you can read is the one you want.
-const LANGUAGE_OPTIONS = LANGUAGES.map((value) => ({ value, label: LANGUAGE_NAMES[value] }));
+function Chevron() {
+  return (
+    <View
+      style={{
+        width: 7,
+        height: 7,
+        borderTopWidth: 1.5,
+        borderRightWidth: 1.5,
+        borderColor: colors.muted,
+        transform: [{ rotate: '45deg' }],
+      }}
+    />
+  );
+}
 
 function CloseGlyph() {
   return (
@@ -77,6 +89,7 @@ export default function SettingsScreen() {
   const { vibrate, setVibrate } = usePreferences();
   const { showToast } = useToast();
   const { t, i18n } = useTranslation();
+  const [languageSheetOpen, setLanguageSheetOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   // The photo as picked, kept on screen after the save too: it is the same
   // image, and swapping to the signed copy would blank the circle while it
@@ -221,14 +234,23 @@ export default function SettingsScreen() {
         {/* Quiet hours and "keep photo moments" are deliberately absent: the
             first needs server-side push gating to mean anything, the second was
             never built. Only settings that actually do something live here. */}
-        <PreferenceRow label={t('settings.language')}>
-          <SegmentedControl
-            options={LANGUAGE_OPTIONS}
-            value={currentLanguage()}
-            onChange={(next) => void setLanguage(next)}
-            label={t('settings.language')}
-          />
-        </PreferenceRow>
+        {/* A row that opens a list rather than an inline switch, so a third
+            language is a new locale file and nothing here changes. */}
+        <Pressable
+          onPress={() => setLanguageSheetOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel={`${t('settings.language')}, ${LANGUAGE_NAMES[currentLanguage()]}`}
+          style={({ pressed }) => ({ opacity: pressed ? 0.55 : 1 })}
+        >
+          <PreferenceRow label={t('settings.language')}>
+            <View className="flex-row items-center" style={{ gap: 10 }}>
+              <Text className="font-nunito text-imm-muted" style={{ fontSize: 15 }}>
+                {LANGUAGE_NAMES[currentLanguage()]}
+              </Text>
+              <Chevron />
+            </View>
+          </PreferenceRow>
+        </Pressable>
         <View style={HAIRLINE} />
         <PreferenceRow label={t('settings.vibrate')}>
           <Toggle value={vibrate} onChange={setVibrate} label={t('settings.vibrate')} />
@@ -239,6 +261,8 @@ export default function SettingsScreen() {
         <SignOutLink />
         <UnpairInitiator />
       </View>
+
+      <LanguageSheet visible={languageSheetOpen} onClose={() => setLanguageSheetOpen(false)} />
     </ScrollView>
   );
 }

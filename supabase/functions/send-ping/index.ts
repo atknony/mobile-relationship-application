@@ -18,7 +18,7 @@ const PUSH_STRINGS = {
   },
   tr: {
     title: (name: string) => `${name} seni düşünüyor 💙`,
-    moment: 'Sana bir an gönderdi',
+    moment: 'Sana bir photo ping gönderdi',
     someone: 'Partnerin',
   },
 } as const;

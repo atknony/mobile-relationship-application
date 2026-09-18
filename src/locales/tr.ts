@@ -1,9 +1,9 @@
 import type { Translation } from './en';
 
 // Informal "sen" throughout — the app speaks to one person about another.
-// A ping is a "dokunuş" (touch), matching "one touch reaches them"; a photo
-// ping is an "an" (moment). Names are never given a case suffix
-// ("Ayşe'den"), which would need vowel harmony per name — phrase around them.
+// The product terms stay in English: "ping" and "photo ping" (lower-case
+// mid-sentence). Neither they nor names are given a case suffix ("ping'ler",
+// "Ayşe'den") — phrase around them. "Dokunuş" is only ever the literal touch.
 export const tr: Translation = {
   common: {
     continue: 'Devam',
@@ -66,13 +66,13 @@ export const tr: Translation = {
     holdFirst: 'ilkini göndermek için basılı tut',
   },
   home: {
-    sendMoment: 'Bir an gönder',
+    sendMoment: 'Photo ping gönder',
     takePhoto: 'Fotoğraf çek',
     chooseFromLibrary: 'Galeriden seç',
     offlineWaiting: 'çevrimdışı — {{n}} bekliyor',
     offlineLater: 'çevrimdışı — sonra gönderilecek',
     removePhoto: 'kaldır',
-    history: 'Dokunuş geçmişi',
+    history: 'Ping geçmişi',
     settings: 'Ayarlar',
     addPhoto: 'Fotoğraf ekle',
   },
@@ -81,13 +81,13 @@ export const tr: Translation = {
     justNow: 'AZ ÖNCE',
     holdToAnswer: 'karşılık vermek için basılı tut',
     notificationTitle: '{{name}} seni düşünüyor',
-    sentMoment: 'Sana bir an gönderdi',
-    droppedOne: 'Bir dokunuş iletilemedi.',
-    droppedMany: '{{n}} dokunuş iletilemedi.',
+    sentMoment: 'Sana bir photo ping gönderdi',
+    droppedOne: 'Bir ping iletilemedi.',
+    droppedMany: '{{n}} ping iletilemedi.',
   },
   thread: {
-    loadFailed: 'Dokunuşların yüklenemedi.',
-    empty: 'Henüz bir dokunuş yok.',
+    loadFailed: 'Ping geçmişi yüklenemedi.',
+    empty: 'Henüz ping yok.',
     queued: 'sırada',
     you: 'sen',
     them: 'partnerin',
@@ -104,12 +104,16 @@ export const tr: Translation = {
     vibrate: 'Gelince titret',
     language: 'Dil',
   },
+  languages: {
+    en: 'İngilizce',
+    tr: 'Türkçe',
+  },
   unpair: {
     disconnect: 'Bağlantıyı kes',
     disconnectFrom: '{{name}} ile bağlantını kes',
     confirm: 'Bağlantı kesilsin mi?',
     confirmFrom: '{{name}} ile bağlantın kesilsin mi?',
-    confirmBody: 'Artık birbirinizin dokunuşlarını almayacaksınız. İstediğiniz zaman yeniden eşleşebilirsiniz.',
+    confirmBody: 'Artık birbirinize ping gönderemeyeceksiniz. İstediğiniz zaman yeniden eşleşebilirsiniz.',
     partnerLeft: '{{name}} bağlantıyı kesti.',
     noLongerConnected: 'Artık bağlı değilsiniz.',
   },
