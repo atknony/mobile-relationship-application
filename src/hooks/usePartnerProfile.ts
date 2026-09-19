@@ -3,6 +3,7 @@ import { AppState } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { preloadImage } from '@/lib/preloadImage';
+import { PROFILE_COLUMNS } from '@/lib/profileColumns';
 import { useProfileStore } from '@/stores/profileStore';
 import { useAppStore } from '@/stores/appStore';
 import { STARTUP_AVATAR_WAIT_MS } from '@/constants/timing';
@@ -26,7 +27,7 @@ export function usePartnerProfile() {
       if (!partnerId) return null;
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select(PROFILE_COLUMNS)
         .eq('id', partnerId)
         .single();
       if (error) throw error;

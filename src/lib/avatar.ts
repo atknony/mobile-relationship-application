@@ -1,5 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '@/lib/supabase';
+import { PROFILE_COLUMNS } from '@/lib/profileColumns';
 import { queryClient } from '@/lib/queryClient';
 import { uploadJpeg } from '@/lib/uploadImage';
 import { useProfileStore } from '@/stores/profileStore';
@@ -48,7 +49,7 @@ export async function changeAvatar(userId: string, localUri: string): Promise<Pr
     .from('profiles')
     .update({ avatar_url: path })
     .eq('id', userId)
-    .select()
+    .select(PROFILE_COLUMNS)
     .single();
 
   if (error) {

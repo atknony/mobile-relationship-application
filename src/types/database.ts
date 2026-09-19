@@ -13,7 +13,8 @@ export type Profile = {
   username: string;
   avatar_url: string | null;
   partner_id: string | null;  // partner's user_id (auth.uid of the other person)
-  push_token: string | null;
+  // push_token is deliberately absent: clients can write it but not read it
+  // (see src/lib/profileColumns.ts).
   locale: string | null;      // app language, so send-ping can write pushes in it; null = English
   quiet_hours_start: number | null; // minutes since local midnight; null = off
   quiet_hours_end: number | null;
@@ -58,7 +59,7 @@ export interface Database {
           push_token?: string | null;
           created_at?: string;
         };
-        Update: Partial<Profile>;
+        Update: Partial<Profile> & { push_token?: string | null };
         Relationships: [];
       };
       moments: {

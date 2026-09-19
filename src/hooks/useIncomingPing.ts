@@ -29,7 +29,7 @@ export function useIncomingPing() {
     // the thread either way. A device with a push token already gets the
     // remote push from send-ping, so this is only the fallback for one that
     // has none (Expo Go, permission denied) — otherwise it arrives twice.
-    const hasPush = !!useProfileStore.getState().ownProfile?.push_token;
+    const hasPush = !!useProfileStore.getState().pushToken;
     if (AppState.currentState !== 'active' && !hasPush) {
       void Notifications?.scheduleNotificationAsync({
         content: {

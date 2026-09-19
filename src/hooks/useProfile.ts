@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { PROFILE_COLUMNS } from '@/lib/profileColumns';
 import { endReplacedSession, isSessionRevoked } from '@/lib/activeDevice';
 import { useAuthStore } from '@/stores/authStore';
 import { useProfileStore } from '@/stores/profileStore';
@@ -32,7 +33,7 @@ export function useProfile() {
       // and single() would reject that with PGRST116 instead of returning null.
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select(PROFILE_COLUMNS)
         .eq('id', userId)
         .maybeSingle();
       if (error) throw error;

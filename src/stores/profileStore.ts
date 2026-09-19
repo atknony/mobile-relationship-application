@@ -8,6 +8,11 @@ interface ProfileState {
   pairId: string | null;     // UUID from the pairs table (needed for realtime subscriptions)
   pairedSince: string | null; // pairs.created_at — "together since" in settings
   pairActivatedAt: string | null; // pairs.activated_at — when it became a pair (celebration)
+  /**
+   * The Expo push token this phone last wrote to its profile, this session.
+   * Local only: clients cannot read `profiles.push_token` back.
+   */
+  pushToken: string | null;
 
   setOwnProfile: (profile: Profile | null) => void;
   setPartnerProfile: (profile: Profile | null) => void;
@@ -17,6 +22,7 @@ interface ProfileState {
     pairedSince?: string | null,
     pairActivatedAt?: string | null
   ) => void;
+  setPushToken: (token: string | null) => void;
   clearProfiles: () => void;
 }
 
@@ -27,6 +33,7 @@ export const useProfileStore = create<ProfileState>((set) => ({
   pairId: null,
   pairedSince: null,
   pairActivatedAt: null,
+  pushToken: null,
 
   setOwnProfile: (profile) =>
     set({
@@ -41,6 +48,8 @@ export const useProfileStore = create<ProfileState>((set) => ({
   setPairId: (pairId, pairedSince = null, pairActivatedAt = null) =>
     set({ pairId, pairedSince, pairActivatedAt }),
 
+  setPushToken: (pushToken) => set({ pushToken }),
+
   clearProfiles: () =>
     set({
       ownProfile: null,
@@ -49,5 +58,6 @@ export const useProfileStore = create<ProfileState>((set) => ({
       pairId: null,
       pairedSince: null,
       pairActivatedAt: null,
+      pushToken: null,
     }),
 }));

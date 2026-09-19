@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/lib/supabase';
+import { PROFILE_COLUMNS } from '@/lib/profileColumns';
 import { uploadJpeg } from '@/lib/uploadImage';
 import { newAvatarPath, pickAvatar } from '@/lib/avatar';
 import { useAuthStore } from '@/stores/authStore';
@@ -69,7 +70,7 @@ export default function ProfileSetupScreen() {
     const { data, error } = await supabase
       .from('profiles')
       .upsert({ id: userId, username: name, ...(avatarPath ? { avatar_url: avatarPath } : {}) })
-      .select()
+      .select(PROFILE_COLUMNS)
       .single();
     setLoading(false);
 

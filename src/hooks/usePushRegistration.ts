@@ -48,7 +48,7 @@ export async function clearPushToken(userId: string) {
 
 export function usePushRegistration() {
   const userId = useAuthStore((s) => s.user?.id);
-  const currentToken = useProfileStore((s) => s.ownProfile?.push_token);
+  const currentToken = useProfileStore((s) => s.pushToken);
   const setIncomingPing = usePingStore((s) => s.setIncomingPing);
 
   useEffect(() => {
@@ -66,9 +66,9 @@ export function usePushRegistration() {
           .eq('id', userId);
         if (error || cancelled) return;
 
-        // Mirror into the store so a remount compares equal and skips the write.
-        const own = useProfileStore.getState().ownProfile;
-        if (own) useProfileStore.getState().setOwnProfile({ ...own, push_token: token });
+        // Remembered locally so a remount compares equal and skips the write —
+        // the column cannot be read back.
+        useProfileStore.getState().setPushToken(token);
       } catch (err) {
         if (__DEV__) console.warn('[push] registration skipped:', err);
       }
