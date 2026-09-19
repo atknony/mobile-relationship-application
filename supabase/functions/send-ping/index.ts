@@ -21,10 +21,23 @@ const PUSH_STRINGS = {
     moment: 'Sana bir photo ping gönderdi',
     someone: 'Partnerin',
   },
+  es: {
+    title: (name: string) => `${name} está pensando en ti 💙`,
+    moment: 'Te envió un photo ping',
+    someone: 'Tu pareja',
+  },
+  zh: {
+    title: (name: string) => `${name} 正在想你 💙`,
+    moment: '给你发了一个 photo ping',
+    someone: '你的另一半',
+  },
 } as const;
 
 function pushStrings(locale: string | null | undefined) {
-  return locale === 'tr' ? PUSH_STRINGS.tr : PUSH_STRINGS.en;
+  // hasOwn, not `in`: "toString" is `in` every object.
+  return locale && Object.hasOwn(PUSH_STRINGS, locale)
+    ? PUSH_STRINGS[locale as keyof typeof PUSH_STRINGS]
+    : PUSH_STRINGS.en;
 }
 
 interface PushTicket {

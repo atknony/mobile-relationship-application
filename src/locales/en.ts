@@ -108,12 +108,6 @@ export const en = {
     vibrate: 'Vibrate on arrival',
     language: 'Language',
   },
-  // Each language's name in *this* language — the sheet's subtitle under the
-  // language's own name. Every locale file names every supported language.
-  languages: {
-    en: 'English',
-    tr: 'Turkish',
-  },
   unpair: {
     disconnect: 'Disconnect',
     disconnectFrom: 'Disconnect from {{name}}',

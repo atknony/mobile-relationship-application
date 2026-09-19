@@ -57,7 +57,7 @@ src/
     devUsers.ts             # __DEV__ shortcut: "01"/"02" → the seeded test accounts
     i18n.ts                 # i18next instance, languages, restore/set — see Localization
     languageTransition.ts   # switchLanguage(): fade out, change, fade in
-  locales/                  # en.ts (source of truth) + tr.ts (typed against it)
+  locales/                  # en.ts (source of truth) + tr.ts, es.ts, zh.ts (typed against it)
   stores/                   # Zustand stores
     authStore.ts            # session, user, sessionLoaded
     profileStore.ts         # ownProfile, partnerProfile, pairedWith, pairId
@@ -92,7 +92,8 @@ src/
                             #   SignOutLink (the only way out of a guarded group),
                             #   MomentPhoto (ping photo: fixed slot, fades in on decode),
                             #   BottomSheet (slides up over a dimmed backdrop)
-    ping/                   # PingButton, PingRipple, PingParticles, IncomingPingOverlay
+    ping/                   # PingButton, PingRipple, PingParticles, IncomingPingOverlay,
+                            #   PhotoMomentSlot (camera button / picked photo; animates out on send)
     pair/                   # InviteCodeDisplay, InviteCodeInput, PairCelebrationOverlay
     unpair/                 # UnpairInitiator, UnpairPendingBanner (banner is stub)
     settings/               # LanguageSheet
@@ -131,11 +132,12 @@ Three rules the tokens do not enforce:
 
 ## Localization
 
-`i18next` + `react-i18next`, English and Turkish (`src/lib/i18n.ts`, `src/locales/`). Every
+`i18next` + `react-i18next`, English, Turkish, Spanish and Simplified Chinese (`zh`)
+(`src/lib/i18n.ts`, `src/locales/`). Every
 user-facing string goes through `t()` in components or `i18n.t()` (from `@/lib/i18n`) in
 callbacks, hooks' subscriptions and `lib/` code. Dates use `i18n.language`, never `undefined`.
 
-- **`en.ts` is the source of truth**; `tr.ts` is typed against it, so a missing key fails the
+- **`en.ts` is the source of truth**; every other locale is typed against it, so a missing key fails the
   typecheck, and `src/lib/__tests__/i18n.test.ts` checks the `{{placeholders}}` match.
 - **The language is per phone**, in AsyncStorage (`imm:language`), defaulting to the phone's
   language read through Hermes' `Intl` — not `expo-localization`, which is a native module and
@@ -150,15 +152,19 @@ callbacks, hooks' subscriptions and `lib/` code. Dates use `i18n.language`, neve
   phone renders Turkish "Nisan" as "NISAN" instead of "NİSAN". Capitalised static strings are
   written in capitals in the locale files; dynamic ones use `toLocaleUpperCase(i18n.language)`.
 - **Choosing a language** is a Settings row that opens `LanguageSheet` (a `BottomSheet` listing
-  `LANGUAGES`), so a new language is a new locale file plus an entry in `LANGUAGES`/
-  `LANGUAGE_NAMES` and a `languages.*` name in every locale — no UI change.
+  `LANGUAGES`). Each language is shown by its own name (`LANGUAGE_NAMES`: English, Türkçe,
+  Español, 中文) whatever the app is in — never translated. A new language is a locale file,
+  an entry in `LANGUAGES`/`LANGUAGE_NAMES`/`resources`, and its three strings in `send-ping`.
 - **Switch through `switchLanguage()`** (`src/lib/languageTransition.ts`), not `setLanguage()`,
   anywhere a person is watching: it fades the root navigator out (`appContentOpacity`, bound in
   `app/_layout.tsx`), changes the language unseen and fades back in. The fade-out outlasts the
   sheet's close because Modals are separate windows the fade cannot reach.
-- Turkish copy: informal "sen"; the product terms stay English — "ping", "photo ping"
-  (*dokunuş* only for the literal touch); never attach a case suffix to a name or to those
-  terms — phrase around it.
+- **Product terms stay English in every language** — "ping", "photo ping". Each locale file's
+  header has its own rules: Turkish is informal "sen" with no case suffix on a name or those
+  terms (*dokunuş* only for the literal touch); Spanish is "tú"/"ustedes" and never an adjective
+  that agrees with either person's gender; Chinese uses 对方/你的另一半, never 他 or 她.
+- Nunito and Newsreader have no CJK glyphs; Chinese falls back to the system font per glyph.
+  That is expected — don't add a CJK font for it without measuring the bundle.
 
 ## 3-state auth guard
 
@@ -173,6 +179,13 @@ gated on `settled` — `ready` *and* the router already on the resolved group. H
 uncovers the navigator one render early, which is the startup flash. The root navigator stays
 mounted throughout and is covered rather than withheld, because expo-router throws if the root
 layout's first render has no navigator.
+
+**A launch into `(home)` also waits for the partner.** Home's header is the partner's name and
+photo, loaded by `usePartnerProfile` under the cover. `settled` additionally requires
+`partnerProfile` in the store (`homeReady`), and on launch `usePartnerProfile` publishes it only
+after the photo is decoded (`STARTUP_AVATAR_WAIT_MS`), so Home appears whole. Offline, that
+fetch fails and `STARTUP_SETTLE_TIMEOUT_MS` reveals Home as it is. `Avatar` treats its first
+non-empty photo as instant, since it mounted before the profile existed.
 
 **Transitions live in `src/constants/transitions.ts`** — `stateChange` (cross-fade between groups),
 `panel` (Moments/Settings rise over Home, which never moves), `step` (parallax for linear flows).

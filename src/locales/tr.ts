@@ -104,10 +104,6 @@ export const tr: Translation = {
     vibrate: 'Gelince titret',
     language: 'Dil',
   },
-  languages: {
-    en: 'İngilizce',
-    tr: 'Türkçe',
-  },
   unpair: {
     disconnect: 'Bağlantıyı kes',
     disconnectFrom: '{{name}} ile bağlantını kes',

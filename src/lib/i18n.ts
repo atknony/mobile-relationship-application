@@ -3,12 +3,24 @@ import { initReactI18next } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { en } from '@/locales/en';
 import { tr } from '@/locales/tr';
+import { es } from '@/locales/es';
+import { zh } from '@/locales/zh';
 
-export const LANGUAGES = ['en', 'tr'] as const;
+// The order the language sheet lists them in. `zh` is Simplified Chinese.
+export const LANGUAGES = ['en', 'tr', 'es', 'zh'] as const;
 export type Language = (typeof LANGUAGES)[number];
 
-/** Each language named in itself — the one you can read is the one you want. */
-export const LANGUAGE_NAMES: Record<Language, string> = { en: 'English', tr: 'Türkçe' };
+/**
+ * Each language named in itself, whatever the app is currently in — someone
+ * who opened the sheet by mistake in a language they cannot read still finds
+ * their own. Never translated, so these are not in the locale files.
+ */
+export const LANGUAGE_NAMES: Record<Language, string> = {
+  en: 'English',
+  tr: 'Türkçe',
+  es: 'Español',
+  zh: '中文',
+};
 
 export const LANGUAGE_KEY = 'imm:language';
 
@@ -25,11 +37,19 @@ declare module 'i18next' {
  */
 function deviceLanguage(): Language {
   try {
-    const tag = Intl.DateTimeFormat().resolvedOptions().locale;
-    return tag.toLowerCase().startsWith('tr') ? 'tr' : 'en';
+    const primary = Intl.DateTimeFormat().resolvedOptions().locale.toLowerCase().split('-')[0];
+    return toLanguage(primary);
   } catch {
     return 'en';
   }
+}
+
+function isLanguage(value: string | null | undefined): value is Language {
+  return (LANGUAGES as readonly string[]).includes(value ?? '');
+}
+
+function toLanguage(value: string | null | undefined): Language {
+  return isLanguage(value) ? value : 'en';
 }
 
 // Its own instance rather than the i18next default export, so nothing else in
@@ -40,7 +60,12 @@ const i18n = createInstance();
 // already has strings. It starts in the phone's language; a choice made in
 // Settings is applied by restoreLanguage() while the splash is still up.
 void i18n.use(initReactI18next).init({
-  resources: { en: { translation: en }, tr: { translation: tr } },
+  resources: {
+    en: { translation: en },
+    tr: { translation: tr },
+    es: { translation: es },
+    zh: { translation: zh },
+  },
   lng: deviceLanguage(),
   fallbackLng: 'en',
   supportedLngs: LANGUAGES,
@@ -49,14 +74,14 @@ void i18n.use(initReactI18next).init({
 });
 
 export function currentLanguage(): Language {
-  return i18n.resolvedLanguage === 'tr' ? 'tr' : 'en';
+  return toLanguage(i18n.resolvedLanguage);
 }
 
 /** Applies the language chosen in Settings, if any. Never rejects. */
 export async function restoreLanguage(): Promise<void> {
   try {
     const stored = await AsyncStorage.getItem(LANGUAGE_KEY);
-    if (stored && (LANGUAGES as readonly string[]).includes(stored) && stored !== i18n.language) {
+    if (isLanguage(stored) && stored !== i18n.language) {
       await i18n.changeLanguage(stored);
     }
   } catch {

@@ -27,8 +27,8 @@ function CheckGlyph() {
 
 /**
  * Every supported language as a list — grows with LANGUAGES, no layout change.
- * Each row leads with the language's own name (the one its speakers can read)
- * and, underneath, its name in the current language.
+ * Each row is the language's own name (English, Türkçe, Español, 中文), the
+ * same whichever language the app is in: it is read by the person who speaks it.
  */
 export function LanguageSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const { t } = useTranslation();
@@ -46,8 +46,7 @@ export function LanguageSheet({ visible, onClose }: { visible: boolean; onClose:
       <View accessibilityRole="radiogroup">
         {LANGUAGES.map((language, i) => {
           const selected = language === current;
-          const ownName = LANGUAGE_NAMES[language];
-          const localName = t(`languages.${language}`);
+          const name = LANGUAGE_NAMES[language];
           return (
             <Fragment key={language}>
               {i > 0 ? <View style={HAIRLINE} /> : null}
@@ -55,28 +54,22 @@ export function LanguageSheet({ visible, onClose }: { visible: boolean; onClose:
                 onPress={() => choose(language)}
                 accessibilityRole="radio"
                 accessibilityState={{ selected }}
-                accessibilityLabel={ownName === localName ? ownName : `${ownName}, ${localName}`}
+                accessibilityLabel={name}
+                accessibilityLanguage={language}
                 style={({ pressed }) => ({
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 12,
-                  paddingVertical: 14,
+                  paddingVertical: 16,
                   opacity: pressed ? 0.55 : 1,
                 })}
               >
-                <View style={{ flex: 1 }}>
-                  <Text
-                    className={selected ? 'font-nunito-semibold text-imm-text' : 'font-nunito text-imm-text'}
-                    style={{ fontSize: 16 }}
-                  >
-                    {ownName}
-                  </Text>
-                  {ownName !== localName ? (
-                    <Text className="font-nunito text-imm-muted" style={{ fontSize: 12 }}>
-                      {localName}
-                    </Text>
-                  ) : null}
-                </View>
+                <Text
+                  className={selected ? 'font-nunito-semibold text-imm-text' : 'font-nunito text-imm-text'}
+                  style={{ flex: 1, fontSize: 16 }}
+                >
+                  {name}
+                </Text>
                 {selected ? <CheckGlyph /> : null}
               </Pressable>
             </Fragment>
