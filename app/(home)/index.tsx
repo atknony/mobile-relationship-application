@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { View, Text, Pressable, Image, Alert } from 'react-native';
+import { View, Text, Pressable, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -11,7 +11,7 @@ import { useSendPing } from '@/hooks/useSendPing';
 import { usePingAnimation } from '@/hooks/usePingAnimation';
 import { PingButton } from '@/components/ping/PingButton';
 import { PartnerPulse } from '@/components/ping/PartnerPulse';
-import { CameraGlyph } from '@/components/ui/CameraGlyph';
+import { PhotoMomentSlot } from '@/components/ping/PhotoMomentSlot';
 import { colors } from '@/constants/colors';
 import { shadows } from '@/constants/shadows';
 
@@ -157,38 +157,12 @@ export default function HomeScreen() {
       </View>
 
       {/* Photo moment */}
-      <View className="items-center" style={{ paddingBottom: 10, gap: 10 }}>
-        {momentUri ? (
-          <View className="items-center" style={{ gap: 8 }}>
-            <Image
-              source={{ uri: momentUri }}
-              style={{ width: 96, height: 72, borderRadius: 14 }}
-              resizeMode="cover"
-            />
-            <Pressable onPress={() => setMomentUri(undefined)} hitSlop={8}>
-              <Text className="font-nunito text-imm-muted" style={{ fontSize: 12 }}>
-                {t('home.removePhoto')}
-              </Text>
-            </Pressable>
-          </View>
-        ) : (
-          <Pressable
-            onPress={handlePickPhoto}
-            hitSlop={8}
-            accessibilityLabel={t('home.addPhoto')}
-            style={{
-              width: 54,
-              height: 54,
-              borderRadius: 27,
-              backgroundColor: 'rgba(255,255,255,0.66)',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: shadows.floatButton,
-            }}
-          >
-            <CameraGlyph />
-          </Pressable>
-        )}
+      <View style={{ paddingBottom: 10 }}>
+        <PhotoMomentSlot
+          uri={momentUri}
+          onPick={handlePickPhoto}
+          onRemove={() => setMomentUri(undefined)}
+        />
       </View>
     </View>
   );

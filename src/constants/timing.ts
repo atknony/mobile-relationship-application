@@ -29,6 +29,17 @@ export const UNPAIR_EXPIRY_HOURS = 24;
 // on the right route group. Settling takes a frame or two, so this is only
 // reached if the guard and the router disagree — see the comment at its use.
 export const STARTUP_SETTLE_TIMEOUT_MS = 3000;
+// A launch into Home holds the splash until the partner's photo is decoded, so
+// the header is complete when the app appears. Kept under the settle timeout:
+// a missing photo is shown late (initials, then a fade), never waited on longer.
+export const STARTUP_AVATAR_WAIT_MS = 2000;
+// The photo waiting under the vessel. Picked, it settles in; sent, it rises
+// toward the vessel, shrinking as it fades — it went with the ping; removed, it
+// only fades. The camera button comes back once the photo is mostly gone.
+export const PHOTO_ATTACH_MS = 240;
+export const PHOTO_SEND_EXIT_MS = 440;
+export const PHOTO_REMOVE_EXIT_MS = 200;
+export const PHOTO_CAMERA_RETURN_MS = 260;
 // Bottom sheets rise a little slower than they fall away, like the system's.
 export const SHEET_OPEN_MS = 260;
 export const SHEET_CLOSE_MS = 200;
