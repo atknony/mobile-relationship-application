@@ -2,18 +2,25 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useProfileStore } from '@/stores/profileStore';
 
+/** An invite code and when it stops working (ISO timestamp). */
+export interface Invite {
+  code: string;
+  expiresAt: string;
+}
+
 export function useInviteCode() {
   const queryClient = useQueryClient();
   const setPairedWith = useProfileStore((s) => s.setPairedWith);
   const setPairId = useProfileStore((s) => s.setPairId);
 
+  // Also invalidates: the function deletes this person's previous pending
+  // invite before inserting the new one, so an older code stops working.
   const generateCode = useMutation({
-    mutationFn: async (): Promise<string> => {
-      const { data, error } = await supabase.functions.invoke<{ code: string }>(
-        'generate-invite-code'
-      );
+    mutationFn: async (): Promise<Invite> => {
+      const { data, error } = await supabase.functions.invoke<Invite>('generate-invite-code');
       if (error) throw error;
-      return data?.code ?? '';
+      if (!data?.code || !data.expiresAt) throw new Error('Invalid response from server');
+      return { code: data.code, expiresAt: data.expiresAt };
     },
   });
 

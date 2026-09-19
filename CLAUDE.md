@@ -40,7 +40,7 @@ app/                        # expo-router screens (file-based routing)
   _layout.tsx               # ROOT: providers + 3-state auth guard
   (auth)/                   # unauthenticated: phone.tsx, verify.tsx
   (onboarding)/             # authenticated, no profile: profile-setup.tsx
-  (pair)/                   # has profile, no partner: create-invite.tsx, enter-invite.tsx
+  (pair)/                   # has profile, no partner: create-invite.tsx (the code, at once), enter-invite.tsx
   (home)/                   # fully paired: index.tsx (send), thread.tsx, settings.tsx
 
 src/
@@ -89,6 +89,7 @@ src/
     useIncomingPing.ts      # Overlay trigger + local notification when backgrounded
     useProfileLocale.ts     # copies the app language to profiles.locale (for pushes)
     useInviteCode.ts        # generate-invite-code + redeem-invite-code Edge Functions
+    usePairingCode.ts       # the invite screen's code: reuse a live one, else generate; refresh()
     useUnpairFlow.ts        # dissolve-pair Edge Function (simplified single-step)
   components/
     ui/                     # Button, TextInput, Avatar, LoadingSpinner, Toast,
@@ -503,6 +504,11 @@ to emit one of those events or the thread will silently go stale again.
   explicit `contentType` (the supabase-js default is text/plain). `expo-file-system`'s
   `File` implements Blob structurally but is not `instanceof Blob`, so it takes the same
   wrong branch — read the bytes.
+- **The invite screen shows the code on arrival and never swaps itself out.** `usePairingCode`
+  reuses this person's live pending invite before generating one — generating on every open
+  would kill a code they already sent when they reopen the app. "Get a new code" always
+  generates, and `generate-invite-code` deletes the previous pending invite, so the old code
+  dies at once. Copy and Share act in place (checkmark / share sheet).
 - **The person who generated the code needs their own push, not just a poll.** Their own
   `profiles` row is changed server-side by `redeem-invite-code`, and `profiles` is not in the
   Realtime publication, so nothing told that device the code had been redeemed. `useProfile`
