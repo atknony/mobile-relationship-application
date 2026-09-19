@@ -88,6 +88,7 @@ src/
     useHaptics.ts           # Haptic pattern wrappers
     useIncomingPing.ts      # Overlay trigger + local notification when backgrounded
     useProfileLocale.ts     # copies the app language to profiles.locale (for pushes)
+    useNotificationPermission.ts # OS permission → appStore, re-read on foreground
     useInviteCode.ts        # generate-invite-code + redeem-invite-code Edge Functions
     usePairingCode.ts       # the invite screen's code: reuse a live one, else generate; refresh()
     useUnpairFlow.ts        # dissolve-pair Edge Function (simplified single-step)
@@ -409,7 +410,8 @@ GDPR/KVKK storage limitation, and Play's account-deletion policy (`2026091911000
 
 - **Unpairing deletes the pair's history at once** — `dissolve-pair` removes its photos and
   moment rows. Nobody could see them again anyway (moments are readable only in an active pair).
-- **Delete account** (Settings → `DeleteAccount` → `delete-account`) removes everything at once.
+- **Delete account** (`DeleteAccount`, in Settings and on the pairing-code screen — someone who
+  unpaired lands there, not in Settings) → `delete-account` removes everything at once.
   Play also needs a *web* deletion URL — that page is not built yet.
 - **`retention-sweep`**, daily at 03:17 UTC via `pg_cron` + `pg_net`: expired invites (1 day),
   dissolved pair rows, storage objects nothing references after 2 days (the grace covers the
@@ -475,6 +477,21 @@ to emit one of those events or the thread will silently go stale again.
   committed** (gitignored). `app.config.js` takes it from the `GOOGLE_SERVICES_JSON` EAS file
   variable on cloud builds, else from the project root on local builds, else leaves it out —
   so a checkout without it still prebuilds, just without FCM. Service-account keys are gitignored too.
+  **"Still prebuilds" is a trap**: such a build installs and runs, but Android issues no push
+  token, so no push ever arrives — the 19 Sep dev build shipped that way (file newly gitignored,
+  no EAS variable). `app.config.js` now warns in the build log, the app logs a dev error when it
+  gets no token, and before any cloud build `eas env:list --environment <env>` must show
+  `GOOGLE_SERVICES_JSON` (it exists for `development` only — add it for `preview`/`production`).
+- **The push token is re-written, not remembered.** Clients cannot read `push_token` back, and
+  the server clears it behind the phone's back (sign-in claim, sign-out, a dead-token report).
+  `usePushRegistration` writes it on Home mount, permission granted, every foreground, and on
+  `appStore.requestPushRegistration()` (called after the claim).
+- **Notification permission is asked once, then surfaced, never nagged.** `usePushRegistration`
+  prompts only while the status is `undetermined`. After that, the **Notifications row in
+  Settings** (between Language and Vibrate) shows On/Off; when off, tapping it opens the app's page
+  in the device settings (`Linking.openSettings`). `useNotificationPermission` re-reads the
+  permission into `appStore` on every foreground, so the row flips on return, and registration
+  re-runs when it turns granted. Nothing about it appears on Home.
 - **A ping must announce itself once.** With a token, a ping reaches the phone twice — the
   push and Realtime. The foreground `setNotificationHandler` (`app/_layout.tsx`) suppresses
   ping banners because the overlay is already up, and `useIncomingPing` schedules its local
@@ -495,7 +512,12 @@ to emit one of those events or the thread will silently go stale again.
 - **Both sides of an unpair have to be told.** `dissolve-pair` runs entirely server-side, so
   the device that did not initiate it learned nothing — its profile query is 5 minutes stale
   and only polls while *unpaired*. `usePairRealtime` watches the `pairs` row and clears the
-  stores locally; the guard does the rest. It bails when `pairedWith` is already null, which
+  stores locally; the guard does the rest. **Realtime only reaches an open app**, so it also
+  re-reads the pair on foreground, on every channel (re)subscribe, and when the `unpaired` push
+  lands — a row that is gone or not active ends the pair the same way (a network error never
+  does). `dissolve-pair` and `delete-account` push the partner "your connection has ended" in
+  their language (`unpair.pushTitle`/`pushBody`; each function keeps its own copy of the
+  strings). While the app is open that banner is suppressed — the toast says it. It bails when `pairedWith` is already null, which
   is what stops the initiator toasting at itself over its own event.
 - **A dissolved pair must not block re-pairing.** `pairs` had a plain
   UNIQUE (requester_id, receiver_id); after unpairing, redeeming a fresh code from the same

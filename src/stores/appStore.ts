@@ -1,5 +1,14 @@
 import { create } from 'zustand';
 
+/** What the OS says about notifications for this app. */
+export interface NotificationPermission {
+  granted: boolean;
+  /** 'granted' | 'denied' | 'undetermined' (never asked yet). */
+  status: string;
+  /** False once the OS will no longer show its prompt — only Settings can change it. */
+  canAskAgain: boolean;
+}
+
 interface AppState {
   /**
    * False while the root layout is still deciding which route group this
@@ -32,6 +41,20 @@ interface AppState {
    */
   celebrationDecided: boolean;
   setCelebrationDecided: (decided: boolean) => void;
+
+  /**
+   * Null where push does not exist (Expo Go) or before the first read.
+   * Written by lib/notificationPermission.ts.
+   */
+  notificationPermission: NotificationPermission | null;
+  setNotificationPermission: (permission: NotificationPermission | null) => void;
+
+  /**
+   * Bumped to make usePushRegistration write this phone's token again — after
+   * the sign-in claim, which clears it server-side. See activeDevice.ts.
+   */
+  pushRegistrationNonce: number;
+  requestPushRegistration: () => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -41,4 +64,9 @@ export const useAppStore = create<AppState>((set) => ({
   setSessionReplaced: (sessionReplaced) => set({ sessionReplaced }),
   celebrationDecided: false,
   setCelebrationDecided: (celebrationDecided) => set({ celebrationDecided }),
+  notificationPermission: null,
+  setNotificationPermission: (notificationPermission) => set({ notificationPermission }),
+  pushRegistrationNonce: 0,
+  requestPushRegistration: () =>
+    set((s) => ({ pushRegistrationNonce: s.pushRegistrationNonce + 1 })),
 }));

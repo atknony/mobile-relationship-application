@@ -8,6 +8,7 @@ import { usePushRegistration } from '@/hooks/usePushRegistration';
 import { useProfileLocale } from '@/hooks/useProfileLocale';
 import { usePingFeedback } from '@/hooks/usePingFeedback';
 import { usePrefetchImages } from '@/hooks/usePrefetchImages';
+import { useNotificationPermission } from '@/hooks/useNotificationPermission';
 import { usePairCelebration } from '@/hooks/usePairCelebration';
 import { useAppStore } from '@/stores/appStore';
 import { IncomingPingOverlay } from '@/components/ping/IncomingPingOverlay';
@@ -23,6 +24,7 @@ function HomeProviders() {
   usePingRealtime();
   usePairRealtime();
   usePushRegistration();
+  useNotificationPermission();
   useProfileLocale();
   usePingFeedback();
   usePrefetchImages();

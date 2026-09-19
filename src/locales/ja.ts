@@ -104,6 +104,9 @@ export const ja: Translation = {
     togetherSince: '{{date}} からいっしょ',
     vibrate: '届いたら振動',
     language: '言語',
+    notifications: '通知',
+    notificationsOn: 'オン',
+    notificationsOff: 'オフ',
     deleteAccount: 'アカウントを削除',
     deleteTitle: 'アカウントを削除する？',
     deleteBody:
@@ -119,6 +122,8 @@ export const ja: Translation = {
     confirmBody: 'おたがいの ping が届かなくなって、ping の履歴と写真も削除されるよ。あとでまたつながることもできるよ。',
     partnerLeft: '{{name}} がつながりを解除したよ。',
     noLongerConnected: 'もうつながっていないよ。',
+    pushTitle: 'つながりが解除されたよ',
+    pushBody: '{{name}} がつながりを解除したよ。Imm を開けば、またペアリングできるよ。',
   },
   notFound: {
     title: 'ページが見つからない',

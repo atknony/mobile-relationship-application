@@ -9,6 +9,8 @@ import { changeAvatar, pickAvatar } from '@/lib/avatar';
 import { useToast } from '@/components/ui/Toast';
 import { useProfileStore } from '@/stores/profileStore';
 import { useAuthStore } from '@/stores/authStore';
+import { useAppStore } from '@/stores/appStore';
+import { openNotificationSettings } from '@/lib/notificationPermission';
 import { Avatar } from '@/components/ui/Avatar';
 import { Toggle } from '@/components/ui/Toggle';
 import { LanguageSheet } from '@/components/settings/LanguageSheet';
@@ -91,6 +93,9 @@ export default function SettingsScreen() {
   const { showToast } = useToast();
   const { t, i18n } = useTranslation();
   const [languageSheetOpen, setLanguageSheetOpen] = useState(false);
+  // Null where push does not exist (Expo Go): the row is left out there.
+  const notificationPermission = useAppStore((s) => s.notificationPermission);
+  const notificationsOn = notificationPermission?.granted ?? false;
   const [uploading, setUploading] = useState(false);
   // The photo as picked, kept on screen after the save too: it is the same
   // image, and swapping to the signed copy would blank the circle while it
@@ -252,6 +257,39 @@ export default function SettingsScreen() {
             </View>
           </PreferenceRow>
         </Pressable>
+        {/* Notifications: a status when on, a way to the device settings when
+            off — pings only reach a closed app through them. Kept current by
+            useNotificationPermission, which re-reads on every return to the
+            foreground, so coming back from the device settings flips it. */}
+        {notificationPermission ? (
+          <>
+            <View style={HAIRLINE} />
+            <Pressable
+              onPress={() => void openNotificationSettings()}
+              disabled={notificationsOn}
+              accessibilityRole="button"
+              accessibilityLabel={`${t('settings.notifications')}, ${
+                notificationsOn ? t('settings.notificationsOn') : t('settings.notificationsOff')
+              }`}
+              style={({ pressed }) => ({ opacity: pressed ? 0.55 : 1 })}
+            >
+              <PreferenceRow label={t('settings.notifications')}>
+                <View className="flex-row items-center" style={{ gap: 10 }}>
+                  <Text
+                    className="font-nunito"
+                    style={{
+                      fontSize: 15,
+                      color: notificationsOn ? colors.muted : colors.emberText,
+                    }}
+                  >
+                    {notificationsOn ? t('settings.notificationsOn') : t('settings.notificationsOff')}
+                  </Text>
+                  {notificationsOn ? null : <Chevron />}
+                </View>
+              </PreferenceRow>
+            </Pressable>
+          </>
+        ) : null}
         <View style={HAIRLINE} />
         <PreferenceRow label={t('settings.vibrate')}>
           <Toggle value={vibrate} onChange={setVibrate} label={t('settings.vibrate')} />

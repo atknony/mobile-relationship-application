@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { InviteCodeDisplay } from '@/components/pair/InviteCodeDisplay';
 import { SignOutLink } from '@/components/ui/SignOutLink';
+import { DeleteAccount } from '@/components/settings/DeleteAccount';
 import { usePairingCode } from '@/hooks/usePairingCode';
 import { colors } from '@/constants/colors';
 
@@ -114,6 +115,9 @@ export default function CreateInviteScreen() {
       </View>
 
       <SignOutLink />
+      {/* Someone who has unpaired lands here, not in Settings — account
+          deletion has to be reachable from here too (Play Store policy). */}
+      <DeleteAccount />
     </View>
   );
 }

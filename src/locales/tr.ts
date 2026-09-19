@@ -102,6 +102,9 @@ export const tr: Translation = {
     togetherSince: '{{date}} tarihinden beri birlikte',
     vibrate: 'Gelince titret',
     language: 'Dil',
+    notifications: 'Bildirimler',
+    notificationsOn: 'Açık',
+    notificationsOff: 'Kapalı',
     deleteAccount: 'Hesabı sil',
     deleteTitle: 'Hesabın silinsin mi?',
     deleteBody:
@@ -118,6 +121,8 @@ export const tr: Translation = {
       'Artık birbirinize ping gönderemeyeceksiniz; ping geçmişiniz ve fotoğraflarınız silinir. İstediğiniz zaman yeniden eşleşebilirsiniz.',
     partnerLeft: '{{name}} bağlantıyı kesti.',
     noLongerConnected: 'Artık bağlı değilsiniz.',
+    pushTitle: 'Bağlantın sona erdi',
+    pushBody: '{{name}} bağlantıyı kesti. Yeniden eşleşmek için uygulamayı aç.',
   },
   notFound: {
     title: 'Sayfa bulunamadı',

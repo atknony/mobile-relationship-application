@@ -39,7 +39,13 @@ export function useInviteCode() {
       // These were swapped here, which put a pair UUID into a field every
       // other consumer reads as a user id.
       setPairedWith(partnerId);
-      setPairId(pairId);
+      // The pair became active in this very request, so "now" is its
+      // activation time (the server stamps now() too; useProfile's pairs read
+      // replaces both a moment later). Leaving it null made the celebration
+      // decide "not a new pair" the instant Home mounted and uncover Home,
+      // then open over it once the real value arrived — this phone flashed
+      // Home first. With it, Home stays covered until the celebration is ready.
+      setPairId(pairId, null, new Date().toISOString());
       void queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });

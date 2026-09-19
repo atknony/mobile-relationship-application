@@ -42,10 +42,14 @@ SplashScreen.setOptions({ fade: true, duration: 300 });
 
 // Only consulted while the app is in the foreground. A ping push that arrives
 // then is already on screen — Realtime opened the overlay and played the
-// haptic — so a system banner on top of it would announce it twice.
+// haptic — so a system banner on top of it would announce it twice. The same
+// for "your partner disconnected": usePairRealtime has already toasted it (or
+// re-checks the pair when this push lands, and toasts then).
+const ANNOUNCED_IN_APP = new Set(['ping', 'unpaired']);
 Notifications?.setNotificationHandler({
   handleNotification: async (notification) => {
-    const show = notification.request.content.data?.type !== 'ping';
+    const type = notification.request.content.data?.type;
+    const show = !(typeof type === 'string' && ANNOUNCED_IN_APP.has(type));
     return {
       shouldShowBanner: show,
       shouldPlaySound: show,

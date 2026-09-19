@@ -1,4 +1,11 @@
 import type * as ExpoNotifications from 'expo-notifications';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
+
+/**
+ * Expo Go dropped remote-push support in SDK 53: no token, and nothing a
+ * permission prompt could enable. Push-related UI stays out of it.
+ */
+export const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
 /**
  * expo-notifications throws on import on Android inside Expo Go (SDK 53+ —

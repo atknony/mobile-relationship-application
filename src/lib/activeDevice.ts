@@ -50,8 +50,10 @@ export async function claimActiveDevice(): Promise<string | null> {
     return i18n.t('auth.claimFailed');
   }
   // The claim clears profiles.push_token so the old phone stops receiving
-  // pushes. If this phone's registration already ran against the cached
-  // profile it would not notice its token was wiped, so re-read the row.
+  // pushes — and this phone's registration may already have written its token
+  // (Home can mount while the claim is in flight). It cannot read the column
+  // back to notice (20260919100000), so ask it to write again.
+  useAppStore.getState().requestPushRegistration();
   void queryClient.invalidateQueries({ queryKey: ['profile'] });
   return null;
 }

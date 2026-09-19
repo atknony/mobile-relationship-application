@@ -104,6 +104,9 @@ export const es: Translation = {
     togetherSince: 'en pareja desde el {{date}}',
     vibrate: 'Vibrar al recibir',
     language: 'Idioma',
+    notifications: 'Notificaciones',
+    notificationsOn: 'Activadas',
+    notificationsOff: 'Desactivadas',
     deleteAccount: 'Eliminar cuenta',
     deleteTitle: '¿Eliminar tu cuenta?',
     deleteBody:
@@ -120,6 +123,8 @@ export const es: Translation = {
       'Ya no recibirán pings entre ustedes, y su historial de pings y sus fotos se eliminan. Pueden volver a vincularse cuando quieran.',
     partnerLeft: '{{name}} se desconectó.',
     noLongerConnected: 'Ya no hay conexión entre ustedes.',
+    pushTitle: 'Tu conexión terminó',
+    pushBody: '{{name}} se desconectó. Abre Imm para vincularte de nuevo.',
   },
   notFound: {
     title: 'Página no encontrada',

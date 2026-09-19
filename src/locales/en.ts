@@ -106,6 +106,9 @@ export const en = {
     togetherSince: 'together since {{date}}',
     vibrate: 'Vibrate on arrival',
     language: 'Language',
+    notifications: 'Notifications',
+    notificationsOn: 'On',
+    notificationsOff: 'Off',
     deleteAccount: 'Delete account',
     deleteTitle: 'Delete your account?',
     deleteBody:
@@ -122,6 +125,10 @@ export const en = {
       "You'll stop receiving each other's pings, and your ping history and photos together are deleted. You can pair again later.",
     partnerLeft: '{{name}} disconnected.',
     noLongerConnected: 'You are no longer connected.',
+    // The push the other phone gets (written by dissolve-pair / delete-account,
+    // which keep their own copy — keep the two in step).
+    pushTitle: 'Your connection has ended',
+    pushBody: '{{name}} disconnected. Open Imm to pair again.',
   },
   notFound: {
     title: 'Page not found',

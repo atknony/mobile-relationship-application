@@ -103,6 +103,9 @@ export const zh: Translation = {
     togetherSince: '自 {{date}} 起在一起',
     vibrate: '收到时振动',
     language: '语言',
+    notifications: '通知',
+    notificationsOn: '已开启',
+    notificationsOff: '已关闭',
     deleteAccount: '删除账号',
     deleteTitle: '要删除你的账号吗？',
     deleteBody: '你的资料、照片和全部 ping 记录将被永久删除，你与另一半的连接也会断开。此操作无法撤销。',
@@ -117,6 +120,8 @@ export const zh: Translation = {
     confirmBody: '你们将不再收到彼此的 ping，你们的 ping 记录和照片也会被删除。之后随时可以重新配对。',
     partnerLeft: '{{name}} 已断开连接。',
     noLongerConnected: '你们已不再连接。',
+    pushTitle: '你们的连接已结束',
+    pushBody: '{{name}} 已断开连接。打开 Imm 即可重新配对。',
   },
   notFound: {
     title: '找不到页面',
