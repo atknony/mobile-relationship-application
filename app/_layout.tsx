@@ -128,6 +128,7 @@ function RootNavigator() {
   const ownProfile = useProfileStore((s) => s.ownProfile);
   const pairedWith = useProfileStore((s) => s.pairedWith);
   const partnerProfile = useProfileStore((s) => s.partnerProfile);
+  const celebrationDecided = useAppStore((s) => s.celebrationDecided);
 
   const [fontsLoaded, fontError] = useFonts({
     Nunito_400Regular,
@@ -159,8 +160,11 @@ function RootNavigator() {
   // into Home also waits for the partner's profile, which usePartnerProfile
   // publishes only once their photo is decoded (or STARTUP_AVATAR_WAIT_MS has
   // passed). Offline, the fetch fails and the settle timeout below reveals Home
-  // as it is.
-  const homeReady = target !== HOME || partnerProfile?.id === pairedWith;
+  // as it is. It also waits for (home) to decide whether a new pair is being
+  // celebrated: until then (home) covers Home, and lifting the splash onto that
+  // cover would flash an empty screen before Home.
+  const homeReady =
+    target !== HOME || (partnerProfile?.id === pairedWith && celebrationDecided);
 
   const settled = ready && segments[0] === target && homeReady;
 

@@ -23,6 +23,15 @@ interface AppState {
    */
   sessionReplaced: boolean;
   setSessionReplaced: (replaced: boolean) => void;
+
+  /**
+   * (home) has decided whether a newly formed pair is celebrated. Until then it
+   * covers Home, so the root layout keeps the splash up on a launch into
+   * (home) rather than lifting it onto that blank cover. Written only by
+   * (home)/_layout.tsx.
+   */
+  celebrationDecided: boolean;
+  setCelebrationDecided: (decided: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -30,4 +39,6 @@ export const useAppStore = create<AppState>((set) => ({
   setRevealed: (isRevealed) => set({ isRevealed }),
   sessionReplaced: false,
   setSessionReplaced: (sessionReplaced) => set({ sessionReplaced }),
+  celebrationDecided: false,
+  setCelebrationDecided: (celebrationDecided) => set({ celebrationDecided }),
 }));

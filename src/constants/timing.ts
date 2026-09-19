@@ -18,6 +18,10 @@ export const PAIR_CELEBRATION_WINDOW_MS = 60 * 60 * 1000;
 export const PAIR_CELEBRATION_AUTODISMISS_MS = 12000;
 // How long the celebration waits for both avatars so it can open complete.
 export const PAIR_CELEBRATION_AVATAR_WAIT_MS = 1500;
+// How long Home stays covered while deciding whether to celebrate. Deciding
+// is normally a few hundred ms (plus the avatar wait above); past this Home is
+// shown, and a celebration that becomes ready later opens over it.
+export const PAIR_CELEBRATION_DECIDE_MS = 3000;
 export const TOAST_AUTODISMISS_MS = 3000;
 export const OFFLINE_PING_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 export const MAX_PING_RETRIES = 3;

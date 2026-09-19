@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, View, Text, Pressable } from 'react-native';
 import Animated, {
   Easing,
@@ -16,7 +16,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { ReplyOrb } from '@/components/ping/ReplyOrb';
 import { RadialGlow } from '@/components/ping/vessel/RadialGlow';
 import { useSendPing } from '@/hooks/useSendPing';
-import { usePairCelebration } from '@/hooks/usePairCelebration';
+import type { Celebration } from '@/hooks/usePairCelebration';
 
 const WASH = 520;
 const AVATAR = 92;
@@ -45,21 +45,37 @@ const COOL_WASH = [
  *
  * Tap anywhere to continue, or hold the orb to send the very first ping.
  * Mounted in (home)/_layout.tsx, before IncomingPingOverlay, so a ping that
- * arrives during the celebration opens on top of it.
+ * arrives during the celebration opens on top of it. The layout owns
+ * usePairCelebration, because it also covers Home until this has been decided.
  */
-export function PairCelebrationOverlay() {
-  const { celebration, dismiss } = usePairCelebration();
-
-  if (!celebration) return null;
+export function PairCelebrationOverlay({
+  celebration,
+  dismiss,
+}: {
+  celebration: Celebration | null;
+  dismiss: () => void;
+}) {
+  // The last celebration shown stays rendered after dismissal, so the Modal
+  // can fade out (visible={false}) instead of vanishing — Home, uncovered at
+  // the same moment, is revealed through the fade.
+  const [shown, setShown] = useState(celebration);
+  if (celebration && celebration !== shown) setShown(celebration);
+  if (!shown) return null;
 
   return (
-    <Modal visible transparent animationType="fade" statusBarTranslucent onRequestClose={dismiss}>
+    <Modal
+      visible={celebration !== null}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={dismiss}
+    >
       <CelebrationContent
-        key={celebration.pairId}
-        partnerName={celebration.partnerName}
-        partnerAvatar={celebration.partnerAvatar}
-        ownName={celebration.ownName}
-        ownAvatar={celebration.ownAvatar}
+        key={shown.pairId}
+        partnerName={shown.partnerName}
+        partnerAvatar={shown.partnerAvatar}
+        ownName={shown.ownName}
+        ownAvatar={shown.ownAvatar}
         onDismiss={dismiss}
       />
     </Modal>

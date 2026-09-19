@@ -391,6 +391,14 @@ opens on top) greets both people when a pair becomes active.
   subscribes to `pairs` UPDATEs where `requester_id` is them and refetches the profile at once,
   plus once more ~800ms later because `redeem-invite-code` sets `partner_id` after it activates
   the pair.
+- **It opens before Home, not over it.** Deciding takes a moment (pair row, partner profile,
+  the celebrated-pairs record, both avatars decoded), and Home used to sit visible for it and then
+  have the celebration fade in on top. `usePairCelebration` (owned by `(home)/_layout.tsx`) now
+  reports `decided`; until then — and while the celebration is up — the layout covers Home in
+  `colors.bg`. The Modal fades in onto that cover and fades out (`visible={false}`, kept mounted)
+  as the cover drops, so Home is revealed only after the message. At launch the root layout holds
+  the splash on `appStore.celebrationDecided`, so a launch with nothing to celebrate never shows
+  the cover. `PAIR_CELEBRATION_DECIDE_MS` stops covering if the data never arrives.
 - **It opens complete**: it waits for `isRevealed` (a Modal draws over the startup cover), the
   partner profile, and both avatars preloaded. The pair is claimed as celebrated only right before
   it shows — claiming first and being cancelled would lose the moment for good.
