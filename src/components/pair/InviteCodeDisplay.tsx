@@ -1,8 +1,9 @@
-import { View, Text, Share } from 'react-native';
+import { View, Text } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
+import { shareInviteCode } from '@/lib/shareInvite';
 import { shadows } from '@/constants/shadows';
 
 /**
@@ -25,10 +26,7 @@ export function InviteCodeDisplay({
   };
 
   const handleShare = async () => {
-    const result = await Share.share({
-      message: t('pair.shareMessage', { code }),
-    });
-    if (result.action === Share.sharedAction) onShared?.();
+    if (await shareInviteCode(code)) onShared?.();
   };
 
   return (
