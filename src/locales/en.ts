@@ -70,7 +70,7 @@ export const en = {
     holdFirst: 'hold to send the first one',
   },
   home: {
-    sendMoment: 'Send a moment',
+    sendMoment: 'Send a photo ping',
     takePhoto: 'Take photo',
     chooseFromLibrary: 'Choose from library',
     offlineWaiting: 'offline — {{n}} waiting',
@@ -85,7 +85,7 @@ export const en = {
     justNow: 'JUST NOW',
     holdToAnswer: 'hold to answer',
     notificationTitle: '{{name}} is thinking of you',
-    sentMoment: 'Sent you a moment',
+    sentMoment: 'Sent you a photo ping',
     droppedOne: "A ping couldn't be delivered.",
     droppedMany: "{{n}} pings couldn't be delivered.",
   },
