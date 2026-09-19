@@ -47,7 +47,7 @@ export const tr: Translation = {
     expiresIn: '{{time}} sonra geçersiz olur',
     expired: 'Bu kodun süresi doldu. Aşağıdan yenisini al.',
     refresh: 'Yeni kod al',
-    copiedShort: 'Kopyalandı',
+    copied: 'Kod kopyalandı',
     inviteWithCode: 'Bu kodu ona gönder. Bir kez çalışır ve 15 dakika içinde geçersiz olur.',
     haveCode: 'Onun kodu bende',
     generateFailed: 'Kod oluşturulamadı. Tekrar dene.',

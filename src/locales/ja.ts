@@ -49,7 +49,7 @@ export const ja: Translation = {
     expiresIn: 'あと {{time}} で期限切れ',
     expired: 'このコードは期限切れだよ。下から新しいコードを発行してね。',
     refresh: '新しいコードを発行',
-    copiedShort: 'コピー済み',
+    copied: 'コードをコピーしたよ',
     inviteWithCode: 'このコードを相手に送ってね。使えるのは一度だけで、15 分で期限切れになるよ。',
     haveCode: '相手のコードを持ってる',
     generateFailed: 'コードを作れなかった。もう一度試してね。',

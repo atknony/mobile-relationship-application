@@ -51,7 +51,7 @@ export const en = {
     expiresIn: 'Expires in {{time}}',
     expired: 'This code has expired. Get a new one below.',
     refresh: 'Get a new code',
-    copiedShort: 'Copied',
+    copied: 'Code copied',
     inviteWithCode: 'Send them this code. It works once, and expires in 15 minutes.',
     haveCode: 'I have their code',
     generateFailed: 'Could not generate a code. Try again.',

@@ -49,7 +49,7 @@ export const es: Translation = {
     expiresIn: 'Caduca en {{time}}',
     expired: 'Este código caducó. Obtén uno nuevo abajo.',
     refresh: 'Obtener un código nuevo',
-    copiedShort: 'Copiado',
+    copied: 'Código copiado',
     inviteWithCode: 'Envíale este código. Funciona una sola vez y caduca en 15 minutos.',
     haveCode: 'Tengo su código',
     generateFailed: 'No se pudo generar un código. Inténtalo de nuevo.',

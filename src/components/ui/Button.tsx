@@ -106,7 +106,9 @@ export function Button({
               borderWidth: 1.5,
               borderColor: 'rgba(45,27,105,0.1)',
             },
-            variant === 'quiet' && { backgroundColor: colors.surfaceQuiet, paddingVertical: 13 },
+            // Same padding as every other variant, so a quiet button sits beside a
+            // primary one at the same height (Copy / Share on the invite card).
+            variant === 'quiet' && { backgroundColor: colors.surfaceQuiet },
             variant === 'ghost' && { backgroundColor: 'transparent' },
           ]}
         >

@@ -508,7 +508,7 @@ to emit one of those events or the thread will silently go stale again.
   reuses this person's live pending invite before generating one — generating on every open
   would kill a code they already sent when they reopen the app. "Get a new code" always
   generates, and `generate-invite-code` deletes the previous pending invite, so the old code
-  dies at once. Copy and Share act in place (checkmark / share sheet).
+  dies at once. Copy and Share act in place (toast / share sheet).
 - **The person who generated the code needs their own push, not just a poll.** Their own
   `profiles` row is changed server-side by `redeem-invite-code`, and `profiles` is not in the
   Realtime publication, so nothing told that device the code had been redeemed. `useProfile`

@@ -48,7 +48,7 @@ export const zh: Translation = {
     expiresIn: '{{time}} 后失效',
     expired: '这个邀请码已过期，请在下方获取新的。',
     refresh: '获取新的邀请码',
-    copiedShort: '已复制',
+    copied: '邀请码已复制',
     inviteWithCode: '把这个邀请码发给对方。只能使用一次，15 分钟后失效。',
     haveCode: '我有对方的邀请码',
     generateFailed: '无法生成邀请码，请重试。',
