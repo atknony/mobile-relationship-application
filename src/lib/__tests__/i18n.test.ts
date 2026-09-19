@@ -3,6 +3,7 @@ import { en } from '@/locales/en';
 import { tr } from '@/locales/tr';
 import { es } from '@/locales/es';
 import { zh } from '@/locales/zh';
+import { ja } from '@/locales/ja';
 import {
   currentLanguage,
   i18n,
@@ -26,7 +27,7 @@ const placeholders = (s: string) => (s.match(/\{\{\s*\w+\s*\}\}/g) ?? []).sort()
 
 describe('locale files', () => {
   const english = flatten(en);
-  const translations = { tr: flatten(tr), es: flatten(es), zh: flatten(zh) };
+  const translations = { tr: flatten(tr), es: flatten(es), zh: flatten(zh), ja: flatten(ja) };
   const everyString = Object.entries(translations).flatMap(([lng, strings]) =>
     Object.entries(strings).map(([key, value]) => ({ lng, key, value }))
   );
@@ -79,6 +80,8 @@ describe('language switching', () => {
     await setLanguage('zh');
     expect(currentLanguage()).toBe('zh');
     expect(i18n.t('pings.notificationTitle', { name: 'Deniz' })).toBe('Deniz 正在想你');
+    await setLanguage('ja');
+    expect(i18n.t('pings.notificationTitle', { name: 'Deniz' })).toBe('Deniz があなたを想ってる');
   });
 
   it('persists the choice and restores it on the next launch', async () => {

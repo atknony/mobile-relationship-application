@@ -13,7 +13,7 @@ const PUSH_TTL_SECONDS = 900;
 const PUSH_STRINGS = {
   en: {
     title: (name: string) => `${name} is thinking of you 💙`,
-    moment: 'Sent you a moment',
+    moment: 'Sent you a photo ping',
     someone: 'Your partner',
   },
   tr: {
@@ -30,6 +30,11 @@ const PUSH_STRINGS = {
     title: (name: string) => `${name} 正在想你 💙`,
     moment: '给你发了一个 photo ping',
     someone: '你的另一半',
+  },
+  ja: {
+    title: (name: string) => `${name} があなたを想ってる 💙`,
+    moment: 'photo ping が届いたよ',
+    someone: 'パートナー',
   },
 } as const;
 

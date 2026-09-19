@@ -57,7 +57,7 @@ src/
     devUsers.ts             # __DEV__ shortcut: "01"/"02" → the seeded test accounts
     i18n.ts                 # i18next instance, languages, restore/set — see Localization
     languageTransition.ts   # switchLanguage(): fade out, change, fade in
-  locales/                  # en.ts (source of truth) + tr.ts, es.ts, zh.ts (typed against it)
+  locales/                  # en.ts (source of truth) + tr.ts, es.ts, zh.ts, ja.ts (typed against it)
   stores/                   # Zustand stores
     authStore.ts            # session, user, sessionLoaded
     profileStore.ts         # ownProfile, partnerProfile, pairedWith, pairId
@@ -132,7 +132,7 @@ Three rules the tokens do not enforce:
 
 ## Localization
 
-`i18next` + `react-i18next`, English, Turkish, Spanish and Simplified Chinese (`zh`)
+`i18next` + `react-i18next`, English, Turkish, Spanish, Simplified Chinese (`zh`) and Japanese
 (`src/lib/i18n.ts`, `src/locales/`). Every
 user-facing string goes through `t()` in components or `i18n.t()` (from `@/lib/i18n`) in
 callbacks, hooks' subscriptions and `lib/` code. Dates use `i18n.language`, never `undefined`.
@@ -153,7 +153,8 @@ callbacks, hooks' subscriptions and `lib/` code. Dates use `i18n.language`, neve
   written in capitals in the locale files; dynamic ones use `toLocaleUpperCase(i18n.language)`.
 - **Choosing a language** is a Settings row that opens `LanguageSheet` (a `BottomSheet` listing
   `LANGUAGES`). Each language is shown by its own name (`LANGUAGE_NAMES`: English, Türkçe,
-  Español, 中文) whatever the app is in — never translated. A new language is a locale file,
+  Español, 中文, 日本語) whatever the app is in — never translated. The current one is marked
+  only by its colour (`ember-text`) — no tick, no pill, same weight, so nothing shifts. A new language is a locale file,
   an entry in `LANGUAGES`/`LANGUAGE_NAMES`/`resources`, and its three strings in `send-ping`.
 - **Switch through `switchLanguage()`** (`src/lib/languageTransition.ts`), not `setLanguage()`,
   anywhere a person is watching: it fades the root navigator out (`appContentOpacity`, bound in
@@ -162,8 +163,9 @@ callbacks, hooks' subscriptions and `lib/` code. Dates use `i18n.language`, neve
 - **Product terms stay English in every language** — "ping", "photo ping". Each locale file's
   header has its own rules: Turkish is informal "sen" with no case suffix on a name or those
   terms (*dokunuş* only for the literal touch); Spanish is "tú"/"ustedes" and never an adjective
-  that agrees with either person's gender; Chinese uses 对方/你的另一半, never 他 or 她.
-- Nunito and Newsreader have no CJK glyphs; Chinese falls back to the system font per glyph.
+  that agrees with either person's gender; Chinese uses 对方/你的另一半, never 他 or 她;
+  Japanese is casual タメ口 (never です/ます) with 相手/パートナー, never 彼 or 彼女.
+- Nunito and Newsreader have no CJK glyphs; Chinese and Japanese fall back to the system font per glyph.
   That is expected — don't add a CJK font for it without measuring the bundle.
 
 ## 3-state auth guard

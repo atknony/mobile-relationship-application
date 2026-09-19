@@ -5,9 +5,10 @@ import { en } from '@/locales/en';
 import { tr } from '@/locales/tr';
 import { es } from '@/locales/es';
 import { zh } from '@/locales/zh';
+import { ja } from '@/locales/ja';
 
 // The order the language sheet lists them in. `zh` is Simplified Chinese.
-export const LANGUAGES = ['en', 'tr', 'es', 'zh'] as const;
+export const LANGUAGES = ['en', 'tr', 'es', 'zh', 'ja'] as const;
 export type Language = (typeof LANGUAGES)[number];
 
 /**
@@ -20,6 +21,7 @@ export const LANGUAGE_NAMES: Record<Language, string> = {
   tr: 'Türkçe',
   es: 'Español',
   zh: '中文',
+  ja: '日本語',
 };
 
 export const LANGUAGE_KEY = 'imm:language';
@@ -65,6 +67,7 @@ void i18n.use(initReactI18next).init({
     tr: { translation: tr },
     es: { translation: es },
     zh: { translation: zh },
+    ja: { translation: ja },
   },
   lng: deviceLanguage(),
   fallbackLng: 'en',
