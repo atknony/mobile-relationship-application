@@ -36,10 +36,14 @@ export function Avatar({ uri, localUri, name, size = 56, tone = 'cool' }: Avatar
   const source = localUri ?? cached.uri;
   const instant = Boolean(localUri) || cached.cachedAtMount;
   const hasPhoto = Boolean(localUri || uri);
-  // The photo this avatar opened with. Only that one appears without a
+  // The first photo this avatar showed. Only that one appears without a
   // transition; a later change (the partner picking a new photo while this is
-  // on screen) cross-fades from the old photo instead of snapping.
-  const [openedWith] = useState(source);
+  // on screen) cross-fades from the old photo instead of snapping. The first
+  // non-empty one, not the one at mount: Home's header mounts under the startup
+  // cover before the partner's profile has loaded, and the launch holds the
+  // splash until that photo is on disk — so it must draw in one frame, not fade.
+  const [openedWith, setOpenedWith] = useState(source);
+  if (!openedWith && source) setOpenedWith(source);
   const transition = instant && source === openedWith ? null : FADE_IN_MS;
 
   return (

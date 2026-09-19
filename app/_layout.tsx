@@ -37,6 +37,8 @@ import { stateChange } from '@/constants/transitions';
 import type { Profile } from '@/types/database';
 
 SplashScreen.preventAutoHideAsync();
+// The app is complete underneath by the time it lifts, so let it go gently.
+SplashScreen.setOptions({ fade: true, duration: 300 });
 
 // Only consulted while the app is in the foreground. A ping push that arrives
 // then is already on screen — Realtime opened the overlay and played the
@@ -125,6 +127,7 @@ function RootNavigator() {
   const session = useAuthStore((s) => s.session);
   const ownProfile = useProfileStore((s) => s.ownProfile);
   const pairedWith = useProfileStore((s) => s.pairedWith);
+  const partnerProfile = useProfileStore((s) => s.partnerProfile);
 
   const [fontsLoaded, fontError] = useFonts({
     Nunito_400Regular,
@@ -147,13 +150,26 @@ function RootNavigator() {
   // `ready` only means the answer is known — the navigator can still be showing
   // the route it booted into. expo-router resolves "/" to (home)/index before
   // anything has been decided, so that is what the very first frames paint.
-  const settled = ready && segments[0] === resolveGroup(session, ownProfile, pairedWith);
+  const target = resolveGroup(session, ownProfile, pairedWith);
 
-  // Insurance, and never the normal path. Holding the splash until the guard
-  // agrees with the router is only safe if that agreement is guaranteed, and a
-  // splash that never lifts is a worse bug than the flash this replaces. If
-  // settling somehow does not happen, give up and show the app: a flash is
-  // recoverable, an app that paints nothing is not.
+  // Home is the screen people launch into nearly every time, and its header is
+  // the partner's name and photo — which (home)'s usePartnerProfile loads, under
+  // the cover, only once `ready` has given it a partner id. Revealing before
+  // that painted an empty header that filled in a moment later. So a launch
+  // into Home also waits for the partner's profile, which usePartnerProfile
+  // publishes only once their photo is decoded (or STARTUP_AVATAR_WAIT_MS has
+  // passed). Offline, the fetch fails and the settle timeout below reveals Home
+  // as it is.
+  const homeReady = target !== HOME || partnerProfile?.id === pairedWith;
+
+  const settled = ready && segments[0] === target && homeReady;
+
+  // Insurance, and never the normal path online. Holding the splash until the
+  // guard agrees with the router (and Home has its partner) is only safe if that
+  // is guaranteed, and a splash that never lifts is a worse bug than the flash
+  // this replaces. If settling somehow does not happen — or the partner's
+  // profile cannot load, as when launching offline — give up and show the app:
+  // a flash is recoverable, an app that paints nothing is not.
   const [gaveUpWaiting, setGaveUpWaiting] = useState(false);
 
   useEffect(() => {

@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { preloadImage } from '@/lib/preloadImage';
 import { useProfileStore } from '@/stores/profileStore';
+import { useAppStore } from '@/stores/appStore';
+import { STARTUP_AVATAR_WAIT_MS } from '@/constants/timing';
 import type { Profile } from '@/types/database';
 
 /**
@@ -30,17 +32,21 @@ export function usePartnerProfile() {
       if (error) throw error;
       const profile = data as Profile;
 
-      // A photo change on a screen that is already showing the old one: have
-      // the new one ready before the store changes, so every Avatar swaps
-      // straight from one photo to the other. Not on first load — there is no
-      // old photo to keep up, and Home should not wait on an avatar.
+      // The photo is made ready before the profile reaches the store, in two cases:
+      // - A change on a screen already showing the old photo, so every Avatar
+      //   swaps straight from one photo to the other.
+      // - The launch. The root layout holds the splash until this profile is in
+      //   the store (see `homeReady` in app/_layout.tsx), so Home appears with
+      //   its header complete instead of a name and then a face popping in.
+      // Not a first load after launch (a new pair): the celebration covers Home
+      // and waits for the avatars itself.
       const previous = useProfileStore.getState().partnerProfile;
-      if (
-        previous?.id === profile.id &&
-        profile.avatar_url &&
-        profile.avatar_url !== previous.avatar_url
-      ) {
-        await preloadImage('avatars', profile.avatar_url, NEW_AVATAR_WAIT_MS);
+      if (profile.avatar_url) {
+        if (previous?.id === profile.id && profile.avatar_url !== previous.avatar_url) {
+          await preloadImage('avatars', profile.avatar_url, NEW_AVATAR_WAIT_MS);
+        } else if (previous?.id !== profile.id && !useAppStore.getState().isRevealed) {
+          await preloadImage('avatars', profile.avatar_url, STARTUP_AVATAR_WAIT_MS);
+        }
       }
 
       return profile;
