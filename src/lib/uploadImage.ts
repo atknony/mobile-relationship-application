@@ -1,6 +1,7 @@
 import { File } from 'expo-file-system';
 import { supabase } from '@/lib/supabase';
 import { seedImage } from '@/lib/imageCache';
+import { downscaleJpeg } from '@/lib/downscaleImage';
 
 const JPEG = 'image/jpeg';
 
@@ -24,6 +25,9 @@ const JPEG = 'image/jpeg';
  * `expo-file-system`'s `File` implements Blob structurally but is not an
  * instance of the global `Blob`, so passing one directly would quietly take the
  * same wrong branch.
+ *
+ * The photo is downscaled first (downscaleImage.ts): a camera original is
+ * several megabytes, and a ping is looked at on a phone.
  */
 export async function uploadJpeg(
   bucket: 'moments' | 'avatars',
@@ -31,9 +35,10 @@ export async function uploadJpeg(
   uri: string,
   { upsert = false }: { upsert?: boolean } = {}
 ): Promise<string> {
+  const upload = await downscaleJpeg(uri);
   // bytes(), not arrayBuffer(): the latter hands back `.buffer`, which is only
   // the file when the view happens to span the whole allocation.
-  const bytes = await new File(uri).bytes();
+  const bytes = await new File(upload).bytes();
 
   const { data, error } = await supabase.storage
     .from(bucket)
@@ -41,6 +46,14 @@ export async function uploadJpeg(
 
   if (error) throw error;
   // The sender already has these bytes; never make them download their own photo.
-  await seedImage(bucket, data.path, uri);
+  await seedImage(bucket, data.path, upload);
+  // The downscaled copy was a temporary file; the cache now holds its own.
+  if (upload !== uri) {
+    try {
+      new File(upload).delete();
+    } catch {
+      // The OS clears its cache directory eventually.
+    }
+  }
   return data.path;
 }

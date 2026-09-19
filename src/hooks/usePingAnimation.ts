@@ -9,6 +9,7 @@ import {
   type SharedValue,
 } from 'react-native-reanimated';
 import { Gesture } from 'react-native-gesture-handler';
+import { useIsFocused } from 'expo-router';
 import { useHaptics } from '@/hooks/useHaptics';
 import { CHARGE_DURATION_MS, MIN_CHARGE_THRESHOLD } from '@/constants/timing';
 import {
@@ -89,7 +90,13 @@ export function usePingAnimation({
     onEarlyRelease();
   }, [onEarlyRelease, releaseEarlyHaptic]);
 
-  useFrameCallback(() => {
+  // Home stays mounted underneath Moments and Settings, and the loop ticks
+  // every frame even at rest (the meniscus wobble reads `clock`). Nobody can
+  // see or touch the vessel while another screen is on top, so stop the loop
+  // there rather than spend the UI thread and battery on it. On return the
+  // clock simply jumps; any burst in flight has long since finished.
+  const focused = useIsFocused();
+  const frameLoop = useFrameCallback(() => {
     'worklet';
     // performance.now() on the UI runtime, so the gesture and the loop share an
     // epoch. Mixing Date.now() here with frame timestamps would drift.
@@ -144,6 +151,11 @@ export function usePingAnimation({
       burst.value = 0;
     }
   }, true);
+
+  const { setActive } = frameLoop;
+  useEffect(() => {
+    setActive(focused);
+  }, [focused, setActive]);
 
   // Progressive haptics on thirds of the linear hold, plus one tap the moment
   // the threshold is crossed — that moment has to be felt, not read.
