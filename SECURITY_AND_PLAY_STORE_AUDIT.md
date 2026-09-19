@@ -21,6 +21,23 @@
 
 ---
 
+## Status: 2026-09-19, after the first round of fixes
+
+Fixed, applied to the live project, and tested against the real API with throwaway accounts (all since deleted):
+
+| Item | Fix |
+|---|---|
+| 2.1 Photo leak to a new partner | ✅ The storage policy now goes through the active pair's moment rows (`20260919100000`). A former partner gets "Object not found". |
+| 2.2 Partner can read your push token | ✅ Clients can no longer read `push_token` (table SELECT replaced by column grants). **Still to do:** turn on Expo *Enhanced Security for Push* and set `EXPO_ACCESS_TOKEN`. |
+| 2.3 Policy clean-up, `rls_auto_enable`, indexes, bucket limits | ✅ `20260919100000`. PNG uploads are now rejected. |
+| 3.3 / 4.2 Retention and account deletion | ✅ `delete-account` + Settings; `dissolve-pair` deletes the pair's history; daily `retention-sweep` (`20260919110000`). **Still to do:** the public *web* deletion page. |
+| 4.5 Permissions | ✅ `RECORD_AUDIO` and `SYSTEM_ALERT_WINDOW` are blocked; the permission text says "photo ping". Takes effect in the next native build. |
+| 1.2 Performance | ✅ Photos are downscaled to 1600px; the vessel's frame loop pauses off-screen; the database advisors are cleared; `expo-blur` and `expo-sharing` are removed. |
+
+**Correction:** `expo-linking` is *not* unused. It's a required peer dependency of `expo-router`, so it stays.
+
+Still open: **4.1** SMS provider and reviewer access, **4.3** privacy policy and Data safety form, **4.4** closed test, **2.4** a separate production project, **4.6** content and CSAE pages, **4.7** production environment variables and icons, **3.2** legal paperwork.
+
 ## 0. Summary: the launch blockers
 
 The app's core security design is stronger than most apps at this stage:

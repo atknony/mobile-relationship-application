@@ -109,13 +109,20 @@ export const en = {
     togetherSince: 'together since {{date}}',
     vibrate: 'Vibrate on arrival',
     language: 'Language',
+    deleteAccount: 'Delete account',
+    deleteTitle: 'Delete your account?',
+    deleteBody:
+      'Your profile, your photos and your whole ping history are deleted for good, and you are disconnected from your partner. This cannot be undone.',
+    deleteConfirm: 'Delete for good',
+    deleteFailed: "Couldn't delete your account. Try again.",
   },
   unpair: {
     disconnect: 'Disconnect',
     disconnectFrom: 'Disconnect from {{name}}',
     confirm: 'Disconnect?',
     confirmFrom: 'Disconnect from {{name}}?',
-    confirmBody: "You'll stop receiving each other's pings. You can pair again later.",
+    confirmBody:
+      "You'll stop receiving each other's pings, and your ping history and photos together are deleted. You can pair again later.",
     partnerLeft: '{{name}} disconnected.',
     noLongerConnected: 'You are no longer connected.',
   },

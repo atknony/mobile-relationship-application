@@ -55,6 +55,10 @@ src/
     activeDevice.ts         # one account, one phone: claim on sign-in, detect replacement
     signOut.ts              # the single sign-out path — never navigates, see gotcha
     devUsers.ts             # __DEV__ shortcut: "01"/"02" → the seeded test accounts
+    profileColumns.ts       # PROFILE_COLUMNS — every client-readable profiles column (not push_token)
+    deleteAccount.ts        # delete-account Edge Function, then a local sign-out
+    downscaleImage.ts       # ≤1600px JPEG before upload (native module loaded lazily)
+    shareInvite.ts          # system share sheet with the invite code
     i18n.ts                 # i18next instance, languages, restore/set — see Localization
     languageTransition.ts   # switchLanguage(): fade out, change, fade in
   locales/                  # en.ts (source of truth) + tr.ts, es.ts, zh.ts, ja.ts (typed against it)
@@ -96,7 +100,7 @@ src/
                             #   PhotoMomentSlot (camera button / picked photo; animates out on send)
     pair/                   # InviteCodeDisplay, InviteCodeInput, PairCelebrationOverlay
     unpair/                 # UnpairInitiator, UnpairPendingBanner (banner is stub)
-    settings/               # LanguageSheet
+    settings/               # LanguageSheet, DeleteAccount
   types/
     database.ts             # Supabase table types (hand-written — see gotcha below)
     ping.ts                 # QueuedPing, IncomingPing, PingStatus
@@ -214,7 +218,7 @@ which fires on mount and cannot be deferred. Any new autofocusing field needs th
 | username | text | displayed to partner |
 | avatar_url | text | nullable |
 | partner_id | uuid | nullable — partner's user_id |
-| push_token | text | nullable — Expo push token |
+| push_token | text | nullable — Expo push token. **Write-only for clients** (no SELECT grant); only `send-ping` reads it |
 | locale | text | nullable — app language ('en'/'tr'), so `send-ping` writes pushes in it; null = English |
 | quiet_hours_start | smallint | nullable — minutes since local midnight; null = off |
 | quiet_hours_end | smallint | nullable |
@@ -291,7 +295,9 @@ overwrite an object in place** — a cached copy would never be refreshed.
 | `generate-invite-code` | Deletes old pending pair, creates new one, returns 6-char code |
 | `redeem-invite-code` | Finds pair by code, sets receiver_id + status=active, sets partner_id on both profiles |
 | `send-ping` | Finds caller's active pair, inserts into moments table |
-| `dissolve-pair` | Sets pair status=dissolved, clears partner_id on both profiles |
+| `dissolve-pair` | Sets pair status=dissolved, clears partner_id on both profiles, deletes that pair's photos and moment rows |
+| `delete-account` | Dissolves the active pair (as an UPDATE, so the partner hears it), removes the caller's storage folders, deletes the auth user — FKs cascade the rest |
+| `retention-sweep` | Daily via pg_cron (`verify_jwt` off, Vault secret header) — see Data retention |
 
 All Edge Functions use `service_role` key and bypass RLS.
 
@@ -302,15 +308,23 @@ needs full DML — BYPASSRLS skips policies, not GRANTs. Both were missing until
 `20260916160300`, which made every query fail before its policy was consulted.
 
 Policies:
-- `profiles`: own user can read/write own row; can read the row that names them as its
-  partner (`partner_id = auth.uid()`). **Never write a `profiles` policy that selects from
+- `profiles`: one SELECT policy — own row, or the row that names you as its partner
+  (`partner_id = auth.uid()`); INSERT/UPDATE of your own row only, with `WITH CHECK`.
+  **Reads are column-granted too** (`20260919100000`): everything but `push_token`, which
+  would let a partner put any text on your lock screen through Expo's API. Select
+  `PROFILE_COLUMNS` (`src/lib/profileColumns.ts`), never `*` or a bare `.select()` after a
+  write — those ask for the ungranted column and Postgres rejects the whole query. This
+  phone's own token lives in `profileStore.pushToken`.
+- Ping photos in storage are readable by their uploader, or by a member of the **active pair
+  whose moment references them** — not by "whoever is your partner now", which let a new
+  partner list everything you had sent a previous one (`20260919100000`). **Never write a `profiles` policy that selects from
   `profiles`** — that is 42P17, infinite recursion, and it takes the whole app down.
 - `pairs`: members (requester_id or receiver_id) can read their own pair
 - `moments`: members of the active pair can read moments for that pair
 - Writes to `moments` and `pairs` go through Edge Functions only — there are no client write
   policies or grants on either (`20260917140000` removed the dashboard-era Turkish policies)
 - **`profiles` writes are column-granted**: `insert (id, username, avatar_url)`,
-  `update (id, username, avatar_url, push_token)`. A client could previously rewrite its own
+  `update (id, username, avatar_url, push_token, locale)`. A client could previously rewrite its own
   `partner_id`, and the storage read policies trust that column — so it could read anyone's
   photos. Never grant table-wide INSERT/UPDATE on `profiles`; a new client-editable column
   needs its own column grant.
@@ -380,9 +394,26 @@ opens on top) greets both people when a pair becomes active.
   partner profile, and both avatars preloaded. The pair is claimed as celebrated only right before
   it shows — claiming first and being cancelled would lose the moment for good.
 
+## Data retention and account deletion
+
+GDPR/KVKK storage limitation, and Play's account-deletion policy (`20260919110000`):
+
+- **Unpairing deletes the pair's history at once** — `dissolve-pair` removes its photos and
+  moment rows. Nobody could see them again anyway (moments are readable only in an active pair).
+- **Delete account** (Settings → `DeleteAccount` → `delete-account`) removes everything at once.
+  Play also needs a *web* deletion URL — that page is not built yet.
+- **`retention-sweep`**, daily at 03:17 UTC via `pg_cron` + `pg_net`: expired invites (1 day),
+  dissolved pair rows, storage objects nothing references after 2 days (the grace covers the
+  offline queue's 24h retries), sign-ups with no profile after 30 days. It authenticates the
+  cron call with a Vault secret checked by `retention_secret_matches()`; the `retention_*`
+  functions are service_role only. **A different project needs its `project_url` Vault
+  secret updated** (see the migration).
+- Anything new that stores personal data needs a line in this list and in the sweep.
+
 ## Unpair flow
 
 Currently simplified: one-tap dissolve via `dissolve-pair` Edge Function. No mutual consent.
+It deletes the pair's history, and the confirm card says so.
 `UnpairPendingBanner` is a stub (returns null). To add mutual consent later, create an
 `unpair_requests` table and restore the `initiate/confirm/decline` pattern in `useUnpairFlow`.
 
@@ -398,6 +429,9 @@ Two things that look wrong but are deliberate: the threshold is compared against
 hold progress (not the eased value, which would desync the haptics from the visuals), and
 `performance.now()` is called **inside** the worklet (mixing it with `Date.now()` in the
 gesture would mix epochs).
+
+The loop runs every frame even at rest, so it is **switched off while Home is not focused**
+(`useIsFocused` → `setActive`): Home stays mounted under Moments and Settings.
 
 ## Ping send path
 
@@ -503,6 +537,13 @@ to emit one of those events or the thread will silently go stale again.
   `INCOMING_PHOTO_WAIT_MS`), so the name, photo, haptic and local notification appear together
   instead of a text card that a photo drops into later. Deliveries are chained so a plain ping
   cannot overtake a held photo ping. The reserved-space fade only shows past the timeout.
+- **Photos are downscaled before upload** (`uploadJpeg` → `downscaleJpeg`, 1600px, JPEG 0.8)
+  and the buckets only accept `image/jpeg` up to 5 MB. `expo-image-manipulator` is `require`d
+  lazily: a dev build made before it was added has no native half, and a top-level import
+  would crash at launch — such a build just uploads full size.
+- **Permissions are pruned in `app.json`**: `RECORD_AUDIO` and `SYSTEM_ALERT_WINDOW` are in
+  `android.blockedPermissions` and the image picker's `microphonePermission` is `false`. A new
+  library can add permissions back through its manifest — check the merged manifest before a release.
 - **Never use Android `elevation`.** Every translucent white surface on the ping screen
   carried `elevation` alongside the iOS `shadow*` props, and Android painted the outline
   shadow as a hard, faceted copy of the shape *inside* the control — the white octagon in

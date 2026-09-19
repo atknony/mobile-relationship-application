@@ -105,13 +105,20 @@ export const tr: Translation = {
     togetherSince: '{{date}} tarihinden beri birlikte',
     vibrate: 'Gelince titret',
     language: 'Dil',
+    deleteAccount: 'Hesabı sil',
+    deleteTitle: 'Hesabın silinsin mi?',
+    deleteBody:
+      'Profilin, fotoğrafların ve tüm ping geçmişin kalıcı olarak silinir, partnerinle bağlantın da kesilir. Bu geri alınamaz.',
+    deleteConfirm: 'Kalıcı olarak sil',
+    deleteFailed: 'Hesabın silinemedi. Tekrar dene.',
   },
   unpair: {
     disconnect: 'Bağlantıyı kes',
     disconnectFrom: '{{name}} ile bağlantını kes',
     confirm: 'Bağlantı kesilsin mi?',
     confirmFrom: '{{name}} ile bağlantın kesilsin mi?',
-    confirmBody: 'Artık birbirinize ping gönderemeyeceksiniz. İstediğiniz zaman yeniden eşleşebilirsiniz.',
+    confirmBody:
+      'Artık birbirinize ping gönderemeyeceksiniz; ping geçmişiniz ve fotoğraflarınız silinir. İstediğiniz zaman yeniden eşleşebilirsiniz.',
     partnerLeft: '{{name}} bağlantıyı kesti.',
     noLongerConnected: 'Artık bağlı değilsiniz.',
   },

@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 Deno.serve(async (req) => {
   try {
@@ -56,12 +56,42 @@ Deno.serve(async (req) => {
       // Pair is dissolved; profile cleanup failure is non-fatal — client will redirect anyway
     }
 
+    // Retention: a dissolved pair's history is never shown again (moments are
+    // readable only within an active pair), so its photos and rows go now
+    // rather than sitting in storage for good. Best effort — the daily
+    // retention-sweep deletes the pair row and anything left unreferenced.
+    try {
+      await deletePairHistory(supabase, pair.id);
+    } catch (err) {
+      console.error('history cleanup failed', err);
+    }
+
     return json({ ok: true });
   } catch (err) {
     console.error(err);
     return json({ error: 'Internal server error' }, 500);
   }
 });
+
+async function deletePairHistory(supabase: SupabaseClient, pairId: string) {
+  const { data: rows, error } = await supabase
+    .from('moments')
+    .select('photo_path')
+    .eq('pair_id', pairId)
+    .not('photo_path', 'is', null);
+  if (error) throw error;
+
+  const paths = (rows ?? []).map((r) => r.photo_path as string);
+  for (let i = 0; i < paths.length; i += 100) {
+    const { error: removeError } = await supabase.storage
+      .from('moments')
+      .remove(paths.slice(i, i + 100));
+    if (removeError) throw removeError;
+  }
+
+  const { error: deleteError } = await supabase.from('moments').delete().eq('pair_id', pairId);
+  if (deleteError) throw deleteError;
+}
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {

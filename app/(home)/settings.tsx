@@ -14,6 +14,7 @@ import { Toggle } from '@/components/ui/Toggle';
 import { LanguageSheet } from '@/components/settings/LanguageSheet';
 import { SignOutLink } from '@/components/ui/SignOutLink';
 import { UnpairInitiator } from '@/components/unpair/UnpairInitiator';
+import { DeleteAccount } from '@/components/settings/DeleteAccount';
 import { colors } from '@/constants/colors';
 import { shadows } from '@/constants/shadows';
 
@@ -260,6 +261,7 @@ export default function SettingsScreen() {
       <View style={{ alignItems: 'center', paddingTop: 4 }}>
         <SignOutLink />
         <UnpairInitiator />
+        <DeleteAccount />
       </View>
 
       <LanguageSheet visible={languageSheetOpen} onClose={() => setLanguageSheetOpen(false)} />

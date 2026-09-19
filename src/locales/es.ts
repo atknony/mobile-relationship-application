@@ -107,13 +107,20 @@ export const es: Translation = {
     togetherSince: 'en pareja desde el {{date}}',
     vibrate: 'Vibrar al recibir',
     language: 'Idioma',
+    deleteAccount: 'Eliminar cuenta',
+    deleteTitle: '¿Eliminar tu cuenta?',
+    deleteBody:
+      'Tu perfil, tus fotos y todo tu historial de pings se eliminan para siempre, y se corta la conexión con tu pareja. No se puede deshacer.',
+    deleteConfirm: 'Eliminar para siempre',
+    deleteFailed: 'No se pudo eliminar tu cuenta. Inténtalo de nuevo.',
   },
   unpair: {
     disconnect: 'Desconectar',
     disconnectFrom: 'Desconectar de {{name}}',
     confirm: '¿Desconectar?',
     confirmFrom: '¿Desconectar de {{name}}?',
-    confirmBody: 'Ya no recibirán pings entre ustedes. Pueden volver a vincularse cuando quieran.',
+    confirmBody:
+      'Ya no recibirán pings entre ustedes, y su historial de pings y sus fotos se eliminan. Pueden volver a vincularse cuando quieran.',
     partnerLeft: '{{name}} se desconectó.',
     noLongerConnected: 'Ya no hay conexión entre ustedes.',
   },
